@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Gestionale OMPT</title>
+<link rel="stylesheet" href="app/css/app.css">
+<link rel="stylesheet" href="app/css/print.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🩺</text></svg>">
+</head>
+<body>
+<div id="app" class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <span class="brand-mark">OMPT</span>
+      <span class="brand-sub" id="brandStudio">Gestionale</span>
+    </div>
+    <nav class="nav" id="nav">
+      <a href="#/" data-nav="/"><span class="nav-ico">▤</span> Cruscotto</a>
+      <a href="#/pazienti" data-nav="/pazienti"><span class="nav-ico">👥</span> Pazienti</a>
+      <a href="#/agenda" data-nav="/agenda"><span class="nav-ico">🗓</span> Agenda sedute</a>
+      <a href="#/fatture" data-nav="/fatture"><span class="nav-ico">🧾</span> Fatture</a>
+      <a href="#/incassi" data-nav="/incassi"><span class="nav-ico">💶</span> Incassi</a>
+      <a href="#/impostazioni" data-nav="/impostazioni"><span class="nav-ico">⚙</span> Impostazioni</a>
+    </nav>
+    <div class="sidebar-foot">
+      <button class="btn btn-ghost btn-sm" id="btnBackup" type="button">⬇ Backup</button>
+      <button class="btn btn-ghost btn-sm" id="btnTheme" type="button">◐ Tema</button>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <button class="btn btn-ghost btn-icon only-mobile" id="btnMenu" type="button" aria-label="Menu">☰</button>
+      <div class="crumbs" id="crumbs"></div>
+      <div class="topbar-actions" id="topbarActions"></div>
+    </header>
+    <main id="view" class="view" tabindex="-1"></main>
+  </div>
+</div>
+
+<div id="modalRoot"></div>
+<div id="toastRoot" class="toast-root" aria-live="polite"></div>
+<div id="printRoot" class="print-root"></div>
+
+<noscript><p style="padding:2rem">Questo gestionale richiede JavaScript attivo.</p></noscript>
+<script type="module" src="app/js/main.js"></script>
+</body>
+</html>
