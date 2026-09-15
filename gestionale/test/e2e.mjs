@@ -73,6 +73,36 @@ await step('compilazione esame soggettivo', async () => {
   if (v !== '7') throw new Error('scala NPRS non aggiornata: ' + v);
 });
 
+await step('selezione multipla a pastiglie (accumula, non sostituisce)', async () => {
+  // Regressione: lo stato veniva letto da una variabile catturata al primo
+  // disegno, quindi le pastiglie non si evidenziavano e ogni clic sostituiva
+  // la scelta precedente invece di aggiungersi.
+  await page.click('.tabs button:has-text("Esame soggettivo")').catch(() => {});
+  await page.click('details.sec:has-text("Body chart") > summary').catch(() => {});
+  const campo = page.locator('.field:has(label:text-is("Qualità del sintomo"))');
+  for (const o of ['Profondo', 'Urente/bruciante', 'Trafittivo']) {
+    await campo.locator(`.chip-opt:text-is("${o}")`).click();
+    await page.waitForTimeout(120);
+  }
+  const attive = await campo.locator('.chip-opt.on').allTextContents();
+  if (attive.length !== 3) throw new Error('attese 3 pastiglie attive senza ricaricare, trovate: ' + JSON.stringify(attive));
+
+  // Un secondo clic deseleziona soltanto quella voce.
+  await campo.locator('.chip-opt:text-is("Trafittivo")').click();
+  await page.waitForTimeout(120);
+  const dopo = await campo.locator('.chip-opt.on').allTextContents();
+  if (dopo.length !== 2 || dopo.includes('Trafittivo')) throw new Error('deselezione errata: ' + JSON.stringify(dopo));
+
+  // E il dato salvato deve coincidere con quanto mostrato.
+  await page.waitForTimeout(900);
+  const salvate = await page.evaluate(async () => {
+    const db = await import('/app/js/db.js');
+    const ep = (await db.all('episodi'))[0];
+    return ep.cartella?.soggettivo?.bodychart?.tipoDolore || [];
+  });
+  if (salvate.length !== 2) throw new Error('in archivio attese 2 voci, trovate: ' + JSON.stringify(salvate));
+});
+
 await step('bandiere rosse evidenziate', async () => {
   await page.click('.tabs button:has-text("Esame soggettivo")').catch(()=>{});
   await page.click('details.sec:has-text("Domande speciali") > summary');

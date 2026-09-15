@@ -7,6 +7,20 @@ import { bodyChart } from './bodychart.js';
 
 const wClass = (w) => 'w-' + (w || 'full');
 
+/** Pastiglia selezionabile: non e' un <button>, quindi la tastiera va gestita a mano. */
+function pastiglia(etichetta, attiva, ruolo, onToggle) {
+  return h('label', {
+    class: 'chip-opt' + (attiva ? ' on' : ''),
+    role: ruolo,
+    tabindex: '0',
+    'aria-checked': attiva ? 'true' : 'false',
+    onClick: (e) => { e.preventDefault(); onToggle(); },
+    onKeydown: (e) => {
+      if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); onToggle(); }
+    }
+  }, etichetta);
+}
+
 /** Quanti campi di una sezione risultano compilati. */
 export function contaCompilati(sezione, dati) {
   const v = dati?.[sezione.id] || {};
@@ -59,32 +73,47 @@ export function campo(f, valore, onSet, ctx = {}) {
           h('option', { value: o, selected: (valore ?? '') === o }, o === '' ? '— seleziona —' : o)));
       break;
 
+    // I due gruppi a pastiglia ridisegnano se stessi a ogni scelta: leggere lo
+    // stato da una variabile catturata al primo disegno lascerebbe le pastiglie
+    // senza riscontro visivo e farebbe calcolare ogni clic su un valore vecchio,
+    // sostituendo la selezione precedente invece di aggiungersi.
     case 'radio': {
-      const set = h('div', { class: 'chip-set' });
-      for (const o of f.o) {
-        const on = valore === o;
-        set.appendChild(h('label', {
-          class: 'chip-opt' + (on ? ' on' : ''),
-          onClick: (e) => { e.preventDefault(); onSet(on ? '' : o); }
-        }, o));
-      }
+      let scelto = valore ?? '';
+      const set = h('div', { class: 'chip-set', role: 'radiogroup', 'aria-label': f.l || '' });
+      const disegna = () => {
+        clear(set);
+        for (const o of f.o) {
+          const on = scelto === o;
+          set.appendChild(pastiglia(o, on, 'radio', () => {
+            scelto = on ? '' : o;   // un secondo clic sulla stessa voce la deseleziona
+            onSet(scelto);
+            disegna();
+          }));
+        }
+      };
+      disegna();
       controllo = set;
       break;
     }
 
     case 'chips': {
-      const attuali = Array.isArray(valore) ? valore : [];
-      const set = h('div', { class: 'chip-set' });
-      for (const o of f.o) {
-        const on = attuali.includes(o);
-        set.appendChild(h('label', {
-          class: 'chip-opt' + (on ? ' on' : ''),
-          onClick: (e) => {
-            e.preventDefault();
-            onSet(on ? attuali.filter(x => x !== o) : [...attuali, o]);
-          }
-        }, o));
-      }
+      let attuali = Array.isArray(valore) ? [...valore] : [];
+      const set = h('div', { class: 'chip-set', role: 'group', 'aria-label': f.l || '' });
+      const disegna = () => {
+        clear(set);
+        for (const o of f.o) {
+          const on = attuali.includes(o);
+          set.appendChild(pastiglia(o, on, 'checkbox', () => {
+            const nuovi = on ? attuali.filter(x => x !== o) : [...attuali, o];
+            // Riordinati secondo lo schema: la cartella stampata li elenca sempre
+            // nella stessa sequenza, a prescindere dall'ordine dei clic.
+            attuali = f.o.filter(x => nuovi.includes(x));
+            onSet([...attuali]);
+            disegna();
+          }));
+        }
+      };
+      disegna();
       controllo = set;
       break;
     }
