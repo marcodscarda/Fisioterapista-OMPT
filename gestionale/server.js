@@ -28,7 +28,11 @@ const TYPES = {
 
 const server = createServer(async (req, res) => {
   try {
-    const url = new URL(req.url, 'http://localhost');
+    // Le barre iniziali vanno collassate prima di costruire l'URL: un target
+    // come "//" fa fallire il parsing e "//host/percorso" verrebbe letto come
+    // URL protocol-relative, con il pathname preso dalla stringa della richiesta.
+    const target = (req.url || '/').replace(/^\/+/, '/');
+    const url = new URL(target, 'http://localhost');
     let pathname = decodeURIComponent(url.pathname);
     if (pathname.endsWith('/')) pathname += 'index.html';
     const filePath = join(ROOT, normalize(pathname).replace(/^(\.\.[/\\])+/, ''));
