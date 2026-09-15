@@ -1,0 +1,56 @@
+GESTIONALE OMPT — COME SI APRE
+==============================
+
+1) Installa Node.js (una volta sola):  https://nodejs.org/it/download
+   Scegli la versione LTS e vai avanti-avanti.
+
+2) Fai doppio clic su:
+       Avvia gestionale.command     se hai un Mac
+       Avvia gestionale.bat         se hai Windows
+
+   Si apre una finestra con scritto "Gestionale OMPT avviato" e il
+   gestionale compare da solo nel browser.
+
+   LASCIA QUELLA FINESTRA APERTA mentre lavori: e' il programma che gira.
+   Per chiudere tutto, chiudi la finestra.
+
+
+SE IL MAC DICE CHE NON PUO' APRIRLO
+-----------------------------------
+Compare un avviso con i pulsanti "Sposta nel Cestino" e "Annulla".
+
+  --> Clicca ANNULLA. Non spostare nulla nel Cestino.
+
+Poi sbloccalo una volta sola:
+
+  1. Menu mela in alto a sinistra  ->  Impostazioni di Sistema
+  2. Privacy e sicurezza  ->  scorri fino in fondo, sezione "Sicurezza"
+  3. C'e' scritto che "Avvia gestionale.command" e' stato bloccato,
+     con accanto il pulsante APRI COMUNQUE: cliccalo e conferma con
+     la password o il Touch ID.
+  4. Torna sul file, doppio clic di nuovo, e stavolta clicca APRI.
+
+Da quel momento funziona sempre.
+
+Se al punto 3 non vedi quella riga: compare solo DOPO un tentativo di
+apertura e resta per circa un'ora. Rifai il doppio clic sul file, premi
+Annulla, e torna subito in Privacy e sicurezza.
+
+Su Mac piu' vecchi (Monterey o precedenti) basta il clic destro sul
+file -> Apri -> Apri.
+
+
+SE WINDOWS MOSTRA "WINDOWS HA PROTETTO IL PC"
+---------------------------------------------
+Clicca "Ulteriori informazioni" e poi "Esegui comunque".
+Anche qui solo la prima volta.
+
+
+ATTENZIONE
+----------
+Non aprire index.html con un doppio clic: il browser lo blocca e la
+pagina resterebbe bianca. Usa sempre l'avviatore qui sopra.
+
+I dati restano su questo computer. Fai un backup con regolarita' dal
+pulsante "Backup" in basso a sinistra e conservalo in un posto sicuro:
+contiene dati sanitari.

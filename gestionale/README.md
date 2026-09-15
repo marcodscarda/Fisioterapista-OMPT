@@ -35,8 +35,40 @@ tutto, chiudi la finestra.
 Se il browser non si apre da solo, nella finestra c'è scritto l'indirizzo da copiare: di norma
 <http://127.0.0.1:4321>.
 
-> **Su Mac, la prima volta** il sistema può rifiutarsi di aprire il file perché scaricato da
-> internet. Fai clic destro sul file → **Apri** → **Apri**. Succede solo al primo avvio.
+### Su Mac, al primo avvio: «non può essere aperto»
+
+macOS blocca gli script scaricati da internet. Compare un avviso con i pulsanti *Sposta nel
+Cestino* e *Annulla*.
+
+**Clicca Annulla** — non spostare nulla nel Cestino, il file non ha niente che non va. Poi sbloccalo
+una volta sola:
+
+1. Apri **Impostazioni di Sistema** (menu  in alto a sinistra → *Impostazioni di Sistema*).
+2. Vai su **Privacy e sicurezza** e scorri fino in fondo, alla sezione **Sicurezza**.
+3. Trovi la riga «*"Avvia gestionale.command" è stato bloccato per proteggere il Mac*» con accanto
+   il pulsante **Apri comunque**: cliccalo e conferma con password o Touch ID.
+4. Torna sul file e fai di nuovo **doppio clic**: stavolta compare un avviso con il pulsante
+   **Apri**. Cliccalo.
+
+Da quel momento il doppio clic funziona sempre, senza più avvisi.
+
+> Se al punto 3 non vedi quella riga, è perché compare solo **dopo** un tentativo di apertura e
+> resta per circa un'ora: rifai il doppio clic sul file, premi *Annulla*, e torna subito in
+> *Privacy e sicurezza*.
+
+Su macOS Monterey e precedenti è più rapido: **clic destro** sul file → **Apri** → **Apri**.
+
+### Su Windows, al primo avvio: «Windows ha protetto il PC»
+
+Se compare la finestra azzurra di SmartScreen, clicca **Ulteriori informazioni** e poi
+**Esegui comunque**. Anche qui succede solo la prima volta.
+
+**In alternativa, con una riga di Terminale** (più veloce se te la cavi): apri *Terminale*, scrivi
+`xattr -d com.apple.quarantine ` (con lo spazio finale), trascina dentro la finestra il file
+*Avvia gestionale.command* e premi Invio. Il blocco sparisce.
+
+Questo blocco riguarda **solo** il file scaricato da internet. Se invece prelevi il progetto con
+`git clone`, macOS non lo marca e il doppio clic funziona subito.
 
 ### Note
 
