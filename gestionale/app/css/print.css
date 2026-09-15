@@ -28,7 +28,7 @@
    La imposta print.js dopo aver misurato l'altezza reale. */
 :is(.print-root, .print-preview) .doc { max-width: 180mm; margin: 0 auto 10mm; font-size: 10.5pt; }
 
-:is(.print-root, .print-preview) .doc-head { display: flex; justify-content: space-between; gap: 12mm; align-items: flex-start; border-bottom: 1.5pt solid #000; padding-bottom: 3mm; margin-bottom: 5mm; }
+:is(.print-root, .print-preview) .doc-head { display: flex; justify-content: space-between; gap: 12mm; align-items: flex-start; border-bottom: 1.5pt solid #000; padding-bottom: .8em; margin-bottom: 1.2em; }
 :is(.print-root, .print-preview) .issuer { font-size: .905em; line-height: 1.35; }
 :is(.print-root, .print-preview) .issuer .issuer-name { font-size: 1.143em; font-weight: 700; letter-spacing: .01em; }
 :is(.print-root, .print-preview) .issuer .issuer-role { font-size: .857em; font-style: italic; margin-bottom: 1.5mm; }
@@ -37,7 +37,7 @@
 :is(.print-root, .print-preview) .doc-title .doc-meta { font-size: .952em; }
 :is(.print-root, .print-preview) .doc-title .copy-mark { font-size: .81em; text-transform: uppercase; letter-spacing: .1em; border: .8pt solid #000; padding: .5mm 2mm; display: inline-block; margin-top: 1.5mm; }
 
-:is(.print-root, .print-preview) .party { border: .8pt solid #000; padding: 3mm; margin-bottom: 5mm; }
+:is(.print-root, .print-preview) .party { border: .8pt solid #000; padding: .8em; margin-bottom: 1.2em; }
 :is(.print-root, .print-preview) .party .party-label { font-size: .762em; text-transform: uppercase; letter-spacing: .1em; margin-bottom: 1.5mm; }
 :is(.print-root, .print-preview) .party .party-name { font-weight: 700; font-size: 1.048em; }
 
@@ -56,7 +56,8 @@
 :is(.print-root, .print-preview) .notes p { margin: 0 0 1.2mm; }
 :is(.print-root, .print-preview) .stamp-box { float: right; width: 42mm; height: 24mm; border: .6pt dashed #666; text-align: center; font-size: .667em; color: #444; padding-top: 10mm; margin-left: 6mm; }
 :is(.print-root, .print-preview) .sign-row { display: flex; justify-content: space-between; margin-top: 2.6em; gap: 10mm; }
-:is(.print-root, .print-preview) .sign { flex: 1; border-top: .6pt solid #000; padding-top: .4em; font-size: .81em; text-align: center; }
+:is(.print-root, .print-preview) .sign-col { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; }
+:is(.print-root, .print-preview) .sign { flex: 0 0 auto; border-top: .6pt solid #000; padding-top: .4em; font-size: .81em; text-align: center; }
 
 /* Cartella clinica / consensi */
 :is(.print-root, .print-preview) .rec-title { text-align: center; margin-bottom: 5mm; }
@@ -73,8 +74,10 @@
 :is(.print-root, .print-preview) table.grid-t { width: 100%; border-collapse: collapse; font-size: 9pt; margin-bottom: 3mm; }
 :is(.print-root, .print-preview) table.grid-t th, :is(.print-root, .print-preview) table.grid-t td { border: .5pt solid #666; padding: 1.2mm 1.8mm; text-align: left; vertical-align: top; }
 :is(.print-root, .print-preview) table.grid-t th { background: #eee; font-size: 8pt; text-transform: uppercase; }
-:is(.print-root, .print-preview) .consent-body { font-size: 10pt; line-height: 1.5; text-align: justify; }
-:is(.print-root, .print-preview) .consent-body li { margin-bottom: 1.5mm; }
+:is(.print-root, .print-preview) .consent-body { font-size: .952em; line-height: 1.45; text-align: justify; }
+:is(.print-root, .print-preview) .consent-body li { margin-bottom: .35em; }
+:is(.print-root, .print-preview) .consent-body p { margin: 0 0 .5em; }
+:is(.print-root, .print-preview) .consent-body ol, :is(.print-root, .print-preview) .consent-body ul { margin: 0 0 .5em; }
 :is(.print-root, .print-preview) .flag-red { font-weight: 700; }
 :is(.print-root, .print-preview) .footer-note { font-size: 7.5pt; color: #444; border-top: .4pt solid #999; margin-top: 6mm; padding-top: 1.5mm; }
 

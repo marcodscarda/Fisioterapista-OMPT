@@ -77,6 +77,8 @@ export const episodiDi = (pazienteId) => db.byIndex('episodi', 'pazienteId', paz
 export const seduteDi = (pazienteId) => db.byIndex('sedute', 'pazienteId', pazienteId);
 export const seduteEpisodio = (episodioId) => db.byIndex('sedute', 'episodioId', episodioId);
 export const fattureDi = (pazienteId) => db.byIndex('fatture', 'pazienteId', pazienteId);
+export const appuntamenti = () => db.all('appuntamenti');
+export const appuntamentiDi = (pazienteId) => db.byIndex('appuntamenti', 'pazienteId', pazienteId);
 export const incassiDi = (fatturaId) => db.byIndex('incassi', 'fatturaId', fatturaId);
 
 /** Mappa fatturaId -> elenco incassi, per le viste che lavorano su molte fatture. */

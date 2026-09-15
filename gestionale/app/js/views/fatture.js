@@ -211,6 +211,12 @@ export async function vistaFattura(root, { id, pazienteId }) {
       riga('Totale documento', fmtEUR(tot.totaleDocumento), true),
       tot.ritenuta ? riga(`Ritenuta ${tot.ritenutaPerc}%`, '− ' + fmtEUR(tot.ritenuta)) : null,
       tot.ritenuta ? riga('Netto a pagare', fmtEUR(tot.nettoAPagare), true) : null,
+      h('div', {
+        class: 'small',
+        style: { marginTop: '10px', color: tot.bolloDovuto ? 'var(--warn)' : 'var(--ok)' }
+      }, tot.bolloDovuto
+        ? '✉ Invio digitale non sufficiente: la marca da bollo va apposta fisicamente sull’originale consegnato al paziente.'
+        : '✉ Nessun bollo dovuto: il documento può essere inviato via e-mail.'),
       emessa ? h('div', { style: { marginTop: '10px' } },
         badge(st.label, st.kind),
         st.incassato ? h('div', { class: 'small', style: { marginTop: '6px' } },
@@ -272,6 +278,10 @@ export async function vistaFattura(root, { id, pazienteId }) {
       h('div', null,
         h('div', { class: 'faint small' }, h('a', { href: '#/paziente/' + paz?.id }, '← ' + (fullName(paz) || 'Paziente'))),
         h('h1', { class: 'mb0' }, (f.tipoDocumento || 'Fattura') + ' ' + numeroCompleto(f))),
+      emessa ? h('button', {
+        class: 'btn btn-sm btn-ghost', title: 'Modifica il numero del documento',
+        onClick: () => modificaNumero(f, imp, salva)
+      }, '✎ numero') : null,
       h('span', { class: 'spacer' }),
       emessa ? badge('emessa', 'ok') : badge('bozza', 'warn')),
     h('div', { class: 'form-grid' },
@@ -315,6 +325,10 @@ export async function vistaFattura(root, { id, pazienteId }) {
     h('button', { class: 'btn btn-primary', onClick: async () => { await salva(); S.aggiorna(); } }, '💾 Salva'),
     !emessa ? h('button', { class: 'btn', onClick: () => emetti() }, '📌 Emetti e numera') : null,
     emessa ? h('button', { class: 'btn', onClick: () => stampaFattura(f, paz, imp) }, '🖨 Stampa') : null,
+    emessa ? h('button', {
+      class: 'btn', title: 'Una sola copia, con la firma, da salvare in PDF e inviare',
+      onClick: () => versioneEmail(f, paz, imp)
+    }, '📧 Versione per e-mail') : null,
     emessa && !f.annullata ? h('button', {
       class: 'btn', onClick: () => registraIncasso(f, imp, () => S.aggiorna())
     }, '💶 Registra incasso') : null,
@@ -350,7 +364,7 @@ export async function vistaFattura(root, { id, pazienteId }) {
     if (!await conferma(
       h('div',
         h('p', `Assegnare il numero ${prossimo}/${anno} a questo documento?`),
-        h('p', { class: 'small faint' }, 'Una volta emesso il numero non è più modificabile: la numerazione deve restare progressiva e senza salti.')),
+        h('p', { class: 'small faint' }, 'Il numero resterà modificabile dal pulsante «✎ numero», ma la numerazione deve restare progressiva e senza salti nell’anno solare.')),
       { title: 'Emetti documento', okLabel: 'Emetti' })) return;
     f.numero = await db.prossimoNumeroFattura(anno);
     f.anno = anno;
@@ -392,6 +406,98 @@ export async function vistaFattura(root, { id, pazienteId }) {
 
   renderRighe();
   aggiorna();
+}
+
+/**
+ * Stampa una sola copia, pensata per essere salvata in PDF e inviata.
+ * Se e' dovuta la marca da bollo l'invio digitale non basta: l'originale
+ * cartaceo con il bollo va comunque consegnato.
+ */
+async function versioneEmail(f, paz, imp) {
+  const tot = calcolaTotali(f, imp);
+  if (!imp.firma) {
+    const procedi = await conferma(
+      h('div',
+        h('p', 'Non hai ancora caricato la firma: il documento uscirà con la riga di firma vuota.'),
+        h('p', { class: 'small faint' }, 'Puoi caricarla in Impostazioni → Studio → Firma.')),
+      { title: 'Firma non impostata', okLabel: 'Stampa comunque' });
+    if (!procedi) return;
+  }
+  if (tot.bolloDovuto) {
+    const procedi = await conferma(
+      h('div',
+        h('p', `Il documento supera € ${tot.soglia} ed è soggetto a imposta di bollo.`),
+        h('p', { class: 'small' },
+          'La marca da bollo da € 2,00 va apposta fisicamente sull’originale consegnato al paziente: ' +
+          'l’invio della sola copia digitale non assolve l’imposta, salvo bollo virtuale autorizzato.')),
+      { title: 'Marca da bollo dovuta', okLabel: 'Ho capito, procedi' });
+    if (!procedi) return;
+  }
+  stampaFattura(f, paz, imp, { copie: 1 });
+  toast('Nella finestra di stampa scegli «Salva come PDF» per ottenere il file da allegare.');
+}
+
+/**
+ * Modifica manuale del numero del documento.
+ * La numerazione dovrebbe restare progressiva e priva di salti, ma la
+ * responsabilita' e' di chi tiene la contabilita': il gestionale avverte e
+ * impedisce solo i duplicati, che sarebbero un errore certo.
+ */
+async function modificaNumero(f, imp, salva) {
+  const anno = f.anno || yearOf(f.data);
+  const tutte = await db.byIndex('fatture', 'anno', Number(anno));
+  const usati = tutte.filter(x => x.id !== f.id && x.numero).map(x => Number(x.numero)).sort((a, b) => a - b);
+
+  let nuovo = f.numero;
+  const avviso = h('div', { class: 'hint' });
+  const campo = h('input', {
+    type: 'number', min: '1', step: '1', value: f.numero,
+    onInput: (e) => {
+      nuovo = num(e.target.value, 0);
+      const doppio = usati.includes(nuovo);
+      avviso.textContent = doppio
+        ? `Il numero ${nuovo}/${anno} è già assegnato a un altro documento.`
+        : (nuovo > 0 && usati.length && nuovo > Math.max(...usati) + 1)
+          ? `Attenzione: si creerebbe un salto nella numerazione (l’ultimo assegnato è ${Math.max(...usati)}).`
+          : '';
+      avviso.style.color = doppio ? 'var(--danger)' : 'var(--warn)';
+    }
+  });
+
+  modal({
+    title: 'Modifica il numero del documento',
+    body: h('div',
+      h('div', { class: 'alert warn' },
+        'La numerazione delle fatture deve essere progressiva e senza salti nell’anno solare. ' +
+        'Modificala solo per correggere un errore, non per riordinare documenti già consegnati.'),
+      h('div', { class: 'form-grid' },
+        h('div', { class: 'field w-half' },
+          h('label', 'Numero'), campo, avviso),
+        h('div', { class: 'field w-half' },
+          h('label', 'Anno'),
+          h('input', { type: 'text', value: anno, disabled: true }),
+          h('span', { class: 'hint' }, 'Segue la data del documento.'))),
+      usati.length
+        ? h('p', { class: 'faint small' }, `Numeri già assegnati nel ${anno}: ${usati.join(', ')}.`)
+        : h('p', { class: 'faint small' }, `Nessun altro documento numerato nel ${anno}.`)),
+    actions: [
+      { label: 'Annulla' },
+      {
+        label: 'Salva numero', class: 'btn-primary', keepOpen: true,
+        onClick: async (close) => {
+          if (!(nuovo > 0) || !Number.isInteger(nuovo)) { toast('Il numero deve essere un intero maggiore di zero.', 'err'); return false; }
+          if (usati.includes(nuovo)) { toast(`Il numero ${nuovo}/${anno} è già assegnato.`, 'err'); return false; }
+          f.numero = nuovo;
+          f.numeroCompleto = `${nuovo}/${anno}`;
+          await salva({ silenzioso: true });
+          // Il contatore si riallinea da solo al massimo presente in archivio.
+          toast(`Documento rinumerato: ${f.numeroCompleto}.`, 'ok');
+          close();
+          S.aggiorna();
+        }
+      }
+    ]
+  });
 }
 
 function checkbox(label, valore, onChange) {

@@ -9,6 +9,7 @@ import * as db from '../db.js';
 import * as S from '../state.js';
 import { stampaModulo } from '../print.js';
 import { caricaImmagine } from '../ui/immagini.js';
+import { ETICHETTE } from '../calendario.js';
 
 export async function vistaImpostazioni(root, { tab = 'studio' } = {}) {
   const imp = { ...(await S.imp()), listino: [...(await S.imp()).listino.map(l => ({ ...l }))] };
@@ -72,6 +73,19 @@ export async function vistaImpostazioni(root, { tab = 'studio' } = {}) {
           campo('numeroAlbo', 'Numero di iscrizione', { w: 'quarter' }),
           campo('ordineProvincia', 'Ordine provinciale', { w: 'quarter', hint: 'Es. OFI Palermo' }))),
       riquadroLogo(imp),
+      riquadroFirma(imp),
+      h('div', { class: 'card' },
+        h('div', { class: 'card-head' }, h('h2', 'Calendario')),
+        h('div', { class: 'alert info' },
+          'Quando mandi un appuntamento a Google Calendar o esporti il file .ics, il titolo dell’evento finisce in un ' +
+          'servizio in cloud. Un appuntamento di fisioterapia rivela una prestazione sanitaria: l’impostazione ' +
+          'predefinita riporta le sole iniziali.'),
+        h('div', { class: 'form-grid' },
+          campo('calendarioEtichetta', 'Titolo degli eventi esportati', {
+            w: 'half', opts: ETICHETTE.map(e => [e.valore, e.nome])
+          }),
+          campo('calendarioTestoGenerico', 'Dicitura generica', { w: 'half', hint: 'Usata se scegli il titolo generico.' }),
+          campo('durataAppuntamentoDefault', 'Durata predefinita (min)', { w: 'third', type: 'number' }))),
       h('div', { class: 'card' },
         h('div', { class: 'card-head' }, h('h2', 'Privacy e conservazione')),
         h('div', { class: 'form-grid' },
@@ -198,8 +212,11 @@ export async function vistaImpostazioni(root, { tab = 'studio' } = {}) {
   }
 }
 
-/** Riquadro di caricamento del logo, con anteprima sulla carta intestata. */
-function riquadroLogo(imp) {
+/**
+ * Riquadro di caricamento di un'immagine delle impostazioni (logo o firma).
+ * @param {object} cfg  chiavi del campo immagine e dell'altezza, testi, opzioni
+ */
+function riquadroImmagine(imp, cfg) {
   const anteprima = h('div', {
     style: {
       background: '#fff', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)',
@@ -210,28 +227,27 @@ function riquadroLogo(imp) {
 
   const disegna = () => {
     clear(anteprima);
-    if (imp.logo) {
+    if (imp[cfg.chiave]) {
       anteprima.appendChild(h('img', {
-        src: imp.logo, alt: 'Logo dello studio',
-        style: { height: (Number(imp.logoAltezzaMm) || 18) * 3.78 + 'px', width: 'auto', maxWidth: '100%' }
+        src: imp[cfg.chiave], alt: cfg.titolo,
+        style: { height: (Number(imp[cfg.chiaveAltezza]) || 18) * 3.78 + 'px', width: 'auto', maxWidth: '100%' }
       }));
     } else {
-      anteprima.appendChild(h('span', { style: { color: '#999', fontSize: '.85rem' } },
-        'Nessun logo caricato'));
+      anteprima.appendChild(h('span', { style: { color: '#999', fontSize: '.85rem' } }, cfg.vuoto));
     }
   };
   disegna();
 
   const scegli = async () => {
-    const file = await pickFile('image/png,image/jpeg,image/svg+xml,image/*');
+    const file = await pickFile('image/png,image/jpeg,image/*');
     if (!file) return;
     try {
       const { dataUrl, larghezza, altezza, kb } = await caricaImmagine(file);
-      imp.logo = dataUrl;
-      info.textContent = `Caricato: ${larghezza}×${altezza} px, ${kb} kB.`;
+      imp[cfg.chiave] = dataUrl;
+      info.textContent = `Caricata: ${larghezza}×${altezza} px, ${kb} kB.`;
       info.style.color = 'var(--ok)';
       disegna();
-      toast('Logo caricato. Ricordati di salvare le impostazioni.', 'ok');
+      toast(cfg.titolo + ' caricata. Ricordati di salvare le impostazioni.', 'ok');
     } catch (e) {
       info.textContent = e.message;
       info.style.color = 'var(--danger)';
@@ -240,34 +256,55 @@ function riquadroLogo(imp) {
   };
 
   return h('div', { class: 'card' },
-    h('div', { class: 'card-head' }, h('h2', 'Logo')),
-    h('p', { class: 'faint small' },
-      'Compare in alto a sinistra sulle fatture e, se vuoi, anche sulla cartella clinica e sui moduli di consenso. ' +
-      'L’immagine viene ridimensionata al caricamento per non appesantire l’archivio e i backup.'),
+    h('div', { class: 'card-head' }, h('h2', cfg.titolo)),
+    h('p', { class: 'faint small' }, cfg.descrizione),
     h('div', { class: 'grid grid-2' },
       anteprima,
       h('div', null,
         h('div', { class: 'btn-row', style: { marginBottom: '10px' } },
           h('button', { class: 'btn btn-primary btn-sm', onClick: scegli }, '⬆ Carica un’immagine'),
-          imp.logo ? h('button', {
+          imp[cfg.chiave] ? h('button', {
             class: 'btn btn-sm btn-danger',
-            onClick: () => { imp.logo = ''; info.textContent = ''; disegna(); toast('Logo rimosso. Salva per confermare.'); }
+            onClick: () => { imp[cfg.chiave] = ''; info.textContent = ''; disegna(); toast('Immagine rimossa. Salva per confermare.'); }
           }, '🗑 Rimuovi') : null),
         info,
         h('div', { class: 'field', style: { marginTop: '10px' } },
           h('label', 'Altezza di stampa (mm)'),
           h('input', {
-            type: 'number', min: '6', max: '40', step: '1', value: imp.logoAltezzaMm ?? 18,
-            onInput: (e) => { imp.logoAltezzaMm = num(e.target.value, 18); disegna(); }
+            type: 'number', min: '5', max: '40', step: '1', value: imp[cfg.chiaveAltezza] ?? 18,
+            onInput: (e) => { imp[cfg.chiaveAltezza] = num(e.target.value, 18); disegna(); }
           }),
-          h('span', { class: 'hint' }, 'Indicativamente 15-20 mm su una fattura A4.')),
-        h('div', { class: 'check-row' },
+          h('span', { class: 'hint' }, cfg.suggerimentoAltezza)),
+        (cfg.opzioni || []).map(o => h('div', { class: 'check-row' },
           h('input', {
-            type: 'checkbox', checked: !!imp.logoInDocumentiClinici,
-            onChange: (e) => { imp.logoInDocumentiClinici = e.target.checked; }
+            type: 'checkbox', checked: !!imp[o.chiave],
+            onChange: (e) => { imp[o.chiave] = e.target.checked; }
           }),
-          h('label', 'Usa il logo anche su cartella clinica e consensi')))));
+          h('label', o.etichetta))))));
 }
+
+const riquadroLogo = (imp) => riquadroImmagine(imp, {
+  chiave: 'logo', chiaveAltezza: 'logoAltezzaMm',
+  titolo: 'Logo',
+  vuoto: 'Nessun logo caricato',
+  descrizione: 'Compare in alto a sinistra sulle fatture e, se vuoi, anche sulla cartella clinica e sui moduli di consenso. ' +
+    'L’immagine viene ridimensionata al caricamento per non appesantire l’archivio e i backup.',
+  suggerimentoAltezza: 'Indicativamente 15-20 mm su una fattura A4.',
+  opzioni: [{ chiave: 'logoInDocumentiClinici', etichetta: 'Usa il logo anche su cartella clinica e consensi' }]
+});
+
+const riquadroFirma = (imp) => riquadroImmagine(imp, {
+  chiave: 'firma', chiaveAltezza: 'firmaAltezzaMm',
+  titolo: 'Firma',
+  vuoto: 'Nessuna firma caricata',
+  descrizione: 'Firma su un foglio bianco, fotografala o scansionala e caricala qui: verrà stampata sopra la riga di firma, ' +
+    'così puoi inviare la fattura via e-mail senza doverla firmare a mano. Sfondo chiaro e inchiostro scuro danno il risultato migliore.',
+  suggerimentoAltezza: 'Indicativamente 12-18 mm.',
+  opzioni: [
+    { chiave: 'firmaInFattura', etichetta: 'Apponi la firma sulle fatture' },
+    { chiave: 'firmaInDocumentiClinici', etichetta: 'Apponi la firma sulla cartella clinica' }
+  ]
+});
 
 const bottoneSalva = (salva) => h('div', { class: 'btn-row end', style: { position: 'sticky', bottom: '12px' } },
   h('button', { class: 'btn btn-primary', onClick: salva }, '💾 Salva impostazioni'));

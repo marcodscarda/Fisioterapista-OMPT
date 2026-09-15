@@ -156,6 +156,18 @@ le sottoscale di FABQ e SPADI), con confronto tra prima e ultima compilazione ri
 di letteratura e grafico dell'andamento. I questionari pertinenti sono suggeriti in base alla
 regione corporea dell'episodio.
 
+### Agenda e appuntamenti
+
+Vista settimanale con ora, paziente, prestazione, durata e stato dell'appuntamento; gli
+appuntamenti passati rimasti aperti vengono elencati per essere chiusi. Ogni appuntamento si può
+aprire in **Google Calendar** con un clic (evento precompilato, lo salvi tu) oppure esportare in
+**.ics** per Google, Apple o Outlook, singolarmente o per l'intera agenda.
+
+Il titolo dell'evento esportato è configurabile e per impostazione predefinita riporta le sole
+iniziali, perché un appuntamento di fisioterapia associato a un nome rivela una prestazione
+sanitaria. Dettagli e motivo per cui non c'è una sincronizzazione automatica:
+[`docs/agenda-calendario.md`](docs/agenda-calendario.md).
+
 ### Fatturazione cartacea
 
 - Numerazione **progressiva per anno**, assegnata al momento dell'emissione e mai riutilizzata.
@@ -163,10 +175,14 @@ regione corporea dell'episodio.
 - Le **sedute non fatturate** si importano nel documento con un clic, raggruppate per prestazione.
 - Calcolo automatico di: esenzione IVA art. 10 n. 18, **imposta di bollo** oltre soglia,
   rivalsa INPS, ritenuta d'acconto, sconto, scadenza.
-- **Logo dello studio** caricabile dalle impostazioni, ridimensionato automaticamente, stampato su
-  fattura e — a scelta — su cartella clinica e consensi.
-- **Adattamento a una pagina**: il documento viene misurato e rimpicciolito quanto basta per stare in
-  un foglio A4; oltre una ventina di righe avvisa che serviranno due fogli, invece di renderlo illeggibile.
+- **Numerazione modificabile**: il numero assegnato si può correggere, con controllo dei duplicati
+  e avviso se si creerebbe un salto.
+- **Logo e firma** caricabili dalle impostazioni, ridimensionati automaticamente. La firma viene
+  stampata sopra la riga di firma, così la fattura si può inviare via e-mail già firmata; se è
+  dovuta la marca da bollo il gestionale avvisa che l'originale cartaceo resta necessario.
+- **Adattamento a una pagina**: fatture e moduli di consenso vengono misurati e rimpiccioliti quanto
+  basta per stare in un foglio A4; se davvero non ci stanno il gestionale avvisa, invece di renderli
+  illeggibili.
 - **Anteprima di stampa a schermo** e stampa in più copie (originale per il paziente + copia per lo studio),
   con riquadro per la marca da bollo, note di legge e spazi per le firme.
 - Esportazione **CSV per il commercialista**.

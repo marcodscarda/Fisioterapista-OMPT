@@ -322,3 +322,30 @@ details.sec .sec-body { padding: 4px 16px 14px; border-top: 1px solid var(--bord
   .view { padding: 14px; }
   .topbar { padding-left: 12px; padding-right: 12px; }
 }
+
+/* ---------- Agenda settimanale ---------- */
+.settimana { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; }
+.giorno { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); min-height: 150px; display: flex; flex-direction: column; }
+.giorno.oggi { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+.giorno-testa { display: flex; align-items: center; gap: 4px; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+.giorno-nome { font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; color: var(--text-faint); font-weight: 700; }
+.giorno-num { font-size: .95rem; font-weight: 700; }
+.giorno.oggi .giorno-num { color: var(--accent-text); }
+.giorno-testa .btn { margin-left: auto; padding: 2px 7px; }
+.giorno-corpo { padding: 6px; display: flex; flex-direction: column; gap: 5px; flex: 1; }
+.appunt {
+  font: inherit; text-align: left; cursor: pointer; width: 100%;
+  background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent);
+  border-radius: var(--radius-sm); padding: 6px 8px; display: flex; flex-direction: column; gap: 1px;
+}
+.appunt:hover { background: var(--accent-soft); border-color: var(--accent); }
+.appunt.disdetto { opacity: .55; border-left-color: var(--danger); text-decoration: line-through; }
+.appunt-ora { font-size: .74rem; font-weight: 700; color: var(--accent-text); font-variant-numeric: tabular-nums; }
+.appunt-paz { font-size: .82rem; font-weight: 600; line-height: 1.25; }
+.appunt-nota { font-size: .72rem; color: var(--text-faint); line-height: 1.2; }
+
+@media (max-width: 900px) {
+  .settimana { grid-template-columns: 1fr; }
+  .giorno { min-height: 0; }
+  .giorno-corpo:empty { display: none; }
+}

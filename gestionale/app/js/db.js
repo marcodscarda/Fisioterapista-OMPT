@@ -5,7 +5,7 @@
 import { uid, todayISO } from './util.js';
 
 const DB_NAME = 'gestionale-ompt';
-const DB_VERSION = 1;
+const DB_VERSION = 2;   // 2: aggiunge l'archivio degli appuntamenti
 
 /** store -> indici da creare */
 const STORES = {
@@ -13,6 +13,7 @@ const STORES = {
   pazienti: ['cognome', 'creatoIl'],
   episodi: ['pazienteId', 'dataApertura'],
   sedute: ['pazienteId', 'episodioId', 'data'],
+  appuntamenti: ['pazienteId', 'data'],
   fatture: ['pazienteId', 'anno', 'data', 'numeroCompleto'],
   incassi: ['fatturaId', 'data'],
   contatori: []                                   // id: 'fatture-2026' -> { ultimo }
@@ -160,6 +161,10 @@ export const IMPOSTAZIONI_DEFAULT = {
   logo: '',                        // data URL, ridimensionato al caricamento
   logoAltezzaMm: 18,               // altezza di stampa del logo
   logoInDocumentiClinici: true,
+  firma: '',                       // data URL della firma scansionata
+  firmaAltezzaMm: 15,
+  firmaInFattura: true,
+  firmaInDocumentiClinici: false,
   // Dati fiscali
   partitaIva: '',
   codiceFiscale: '',
@@ -191,6 +196,10 @@ export const IMPOSTAZIONI_DEFAULT = {
     { id: 'p3', nome: 'Rivalutazione e aggiornamento del programma', prezzo: 50, durata: 45 },
     { id: 'p4', nome: 'Seduta domiciliare', prezzo: 70, durata: 60 }
   ],
+  // Calendario
+  calendarioEtichetta: 'iniziali',       // iniziali | generico | completo
+  calendarioTestoGenerico: 'Appuntamento',
+  durataAppuntamentoDefault: 45,
   // Privacy
   titolareTrattamento: '',
   dpoContatto: '',

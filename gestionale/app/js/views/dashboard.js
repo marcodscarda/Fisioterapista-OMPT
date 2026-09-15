@@ -1,5 +1,5 @@
 /* ============================================================
-   Vista: cruscotto iniziale
+   Vista: schermata iniziale (Home)
    ============================================================ */
 import { 
   add, h, clear, fullName, fmtDate, fmtEUR, nz, todayISO, num, round2, yearOf, monthOf, MESI, daysBetween
@@ -10,8 +10,9 @@ import * as S from '../state.js';
 import { calcolaTotali, statoFattura, numeroCompleto } from '../fatture.js';
 
 export async function vistaDashboard(root) {
-  const [pazienti, episodi, sedute, fatture, incassi, imp] = await Promise.all([
-    S.pazienti(), db.all('episodi'), db.all('sedute'), db.all('fatture'), db.all('incassi'), S.imp()
+  const [pazienti, episodi, sedute, fatture, incassi, appuntamenti, imp] = await Promise.all([
+    S.pazienti(), db.all('episodi'), db.all('sedute'), db.all('fatture'), db.all('incassi'),
+    S.appuntamenti(), S.imp()
   ]);
   const pazById = new Map(pazienti.map(p => [p.id, p]));
   const oggi = todayISO();
@@ -38,11 +39,11 @@ export async function vistaDashboard(root) {
   const seduteNonFatturate = sedute.filter(s => !s.fatturaId && num(s.importo) > 0);
   const daFatturare = round2(seduteNonFatturate.reduce((s, x) => s + num(x.importo), 0));
 
-  const prossimi = sedute
-    .map(s => ({ data: s.dati?.planSeduta?.prossimaSeduta, paziente: pazById.get(s.pazienteId), episodioId: s.episodioId }))
-    .filter(x => x.data && x.data >= oggi)
-    .sort((a, b) => a.data.localeCompare(b.data))
-    .slice(0, 8);
+  const prossimi = appuntamenti
+    .filter(a => a.data >= oggi && a.stato !== 'disdetto')
+    .sort((a, b) => (a.data + (a.ora || '')).localeCompare(b.data + (b.ora || '')))
+    .slice(0, 8)
+    .map(a => ({ data: a.data, ora: a.ora, paziente: pazById.get(a.pazienteId), prestazione: a.prestazione }));
 
   const ultimeSedute = sedute.slice().sort((a, b) => (b.data || '').localeCompare(a.data || '')).slice(0, 8);
 
@@ -100,9 +101,10 @@ export async function vistaDashboard(root) {
       h('div', { class: 'card card-tight' },
         h('div', { class: 'card-head' }, h('h3', 'Prossimi appuntamenti')),
         prossimi.length
-          ? h('div', prossimi.map(x => h('a', { class: 'list-link', href: '#/cartella/' + x.episodioId + '/sedute' },
-            h('strong', fmtDate(x.data)), ' — ', fullName(x.paziente) || 'paziente')))
-          : vuoto('Nessun appuntamento pianificato. Si popola indicando la data della prossima seduta nel piano SOAP.')),
+          ? h('div', prossimi.map(x => h('a', { class: 'list-link', href: '#/agenda' },
+            h('strong', fmtDate(x.data)), x.ora ? ' · ' + x.ora : '', ' — ', fullName(x.paziente) || 'paziente',
+            x.prestazione ? h('span', { class: 'faint small' }, ' · ' + x.prestazione) : null)))
+          : vuoto('Nessun appuntamento in programma. Aggiungine uno dall’agenda.')),
 
       h('div', { class: 'card card-tight' },
         h('div', { class: 'card-head' }, h('h3', 'Ultime sedute')),

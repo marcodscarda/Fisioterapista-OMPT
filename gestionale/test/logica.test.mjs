@@ -206,5 +206,58 @@ const ids = (r) => r.ipotesi.map(i => i.id);
   eq('ragionamento: nessun punteggio negativo in elenco', r.ipotesi.every(i => i.punti > 0), true);
 }
 
+/* ---------------------------------------------------------------- */
+/* Calendario: ICS e link a Google                                    */
+/* ---------------------------------------------------------------- */
+const cal = await import('../app/js/calendario.js');
+
+eq('calendario: fine appuntamento', cal.fine('2026-09-20', '09:00', 45), { data: '2026-09-20', ora: '09:45' });
+eq('calendario: fine oltre la mezzanotte', cal.fine('2026-09-20', '23:30', 60), { data: '2026-09-21', ora: '00:30' });
+eq('calendario: formato data-ora', cal.stampaDataOra('2026-09-20', '09:05'), '20260920T090500');
+
+const pazProva = { nome: 'Mario', cognome: 'Rossi' };
+const appProva = { id: 'a1', data: '2026-09-20', ora: '09:00', durata: 45, prestazione: 'Seduta di terapia manuale', note: 'portare referto' };
+
+eq('calendario: etichetta con sole iniziali',
+  cal.etichettaEvento(appProva, pazProva, { calendarioEtichetta: 'iniziali' }), 'FT — M.R.');
+eq('calendario: etichetta generica',
+  cal.etichettaEvento(appProva, pazProva, { calendarioEtichetta: 'generico', calendarioTestoGenerico: 'Appuntamento' }), 'Appuntamento');
+eq('calendario: etichetta per esteso',
+  cal.etichettaEvento(appProva, pazProva, { calendarioEtichetta: 'completo' }), 'Seduta di terapia manuale — Rossi Mario');
+eq('calendario: predefinito riservato',
+  cal.etichettaEvento(appProva, pazProva, {}), 'FT — M.R.');
+
+{
+  const ics = cal.costruisciICS([appProva], new Map([['p1', pazProva]]), { calendarioEtichetta: 'iniziali' });
+  eq('ICS: intestazione', ics.startsWith('BEGIN:VCALENDAR\r\nVERSION:2.0'), true);
+  eq('ICS: chiusura', ics.trimEnd().endsWith('END:VCALENDAR'), true);
+  eq('ICS: orari di inizio e fine', /DTSTART:20260920T090000/.test(ics) && /DTEND:20260920T094500/.test(ics), true);
+  eq('ICS: terminatori di riga CRLF', ics.includes('\n') && !/[^\r]\n/.test(ics), true);
+  eq('ICS: nessuna riga oltre 75 ottetti', ics.split('\r\n').every(r => r.length <= 75), true);
+
+  // Nel titolo generico non deve finire nulla del paziente.
+  const generico = cal.costruisciICS([appProva], new Map([['p1', pazProva]]),
+    { calendarioEtichetta: 'generico', calendarioTestoGenerico: 'Appuntamento' });
+  eq('ICS: il titolo generico non rivela il paziente', /Rossi|Mario|terapia/.test(generico), false);
+
+  // I separatori speciali vanno protetti.
+  const conVirgole = cal.costruisciICS(
+    [{ ...appProva, prestazione: 'Seduta; controllo, rivalutazione' }],
+    new Map([['p1', pazProva]]), { calendarioEtichetta: 'completo' });
+  eq('ICS: punto e virgola protetto', conVirgole.includes('\\;'), true);
+  eq('ICS: virgola protetta', conVirgole.includes('\\,'), true);
+
+  eq('ICS: appuntamento disdetto marcato',
+    cal.costruisciICS([{ ...appProva, stato: 'disdetto' }], new Map(), {}).includes('STATUS:CANCELLED'), true);
+}
+
+{
+  const url = new URL(cal.linkGoogleCalendar(appProva, pazProva, { calendarioEtichetta: 'iniziali' }));
+  eq('Google: dominio corretto', url.host, 'calendar.google.com');
+  eq('Google: azione TEMPLATE', url.searchParams.get('action'), 'TEMPLATE');
+  eq('Google: intervallo', url.searchParams.get('dates'), '20260920T090000/20260920T094500');
+  eq('Google: titolo riservato', url.searchParams.get('text'), 'FT — M.R.');
+}
+
 console.log(ko ? `\n${ko} TEST FALLITI` : '\nTutti i test superati');
 process.exit(ko ? 1 : 0);

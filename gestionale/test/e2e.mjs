@@ -237,6 +237,26 @@ await step('emissione con numerazione progressiva', async () => {
   if (!/emessa/.test(badge)) throw new Error('stato non aggiornato: ' + badge);
 });
 
+await step('il numero del documento è modificabile', async () => {
+  await page.click('button:has-text("✎ numero")');
+  await page.waitForSelector('.modal');
+  await page.fill('.modal input[type=number]', '7');
+  await page.click('.modal-foot button:has-text("Salva numero")');
+  await page.waitForSelector('h1:has-text("7/")', { timeout: 5000 });
+  const salvato = await page.evaluate(async () => {
+    const db = await import('/app/js/db.js');
+    return (await db.all('fatture')).find(f => f.numero)?.numero;
+  });
+  if (salvato !== 7) throw new Error('numero non salvato: ' + salvato);
+
+  // Il numero successivo deve tenere conto della rinumerazione, senza duplicati.
+  const prossimo = await page.evaluate(async () => {
+    const db = await import('/app/js/db.js');
+    return db.anteprimaNumeroFattura(new Date().getFullYear());
+  });
+  if (prossimo !== 8) throw new Error('il contatore non si è riallineato: ' + prossimo);
+});
+
 await step('anteprima di stampa contiene i riferimenti di legge', async () => {
   const t = await page.textContent('.print-preview');
   for (const atteso of ['art. 10, n. 18', 'Bianchi', 'Rossi Mario', '190/2014', 'D.P.R. 642/1972']) {
@@ -261,11 +281,48 @@ await step('registro incassi aggiornato', async () => {
   if (!/Tutte le fatture emesse risultano incassate/.test(t)) throw new Error('crediti aperti non azzerati');
 });
 
-await step('agenda mostra la seduta', async () => {
+await step('agenda: nuovo appuntamento nella settimana', async () => {
   await page.click('a[data-nav="/agenda"]');
-  await page.waitForTimeout(400);
-  const t = await page.textContent('#view');
-  if (!/Rossi Mario/.test(t)) throw new Error('seduta non presente in agenda');
+  await page.waitForSelector('.settimana', { timeout: 5000 });
+  await page.click('button:has-text("+ Nuovo appuntamento")');
+  await page.waitForSelector('.modal');
+  const val = await page.locator('.modal .field:has(label:text-is("Paziente *")) option').nth(1).getAttribute('value');
+  await page.selectOption('.modal .field:has(label:text-is("Paziente *")) select', val);
+  await page.fill('.modal .field:has(label:text-is("Ora")) input', '11:30');
+  // L'anteprima deve mostrare che nel calendario esterno finiscono le sole iniziali.
+  const anteprima = await page.textContent('.modal .field:has(.hint) .hint').catch(() => '');
+  if (anteprima && !/FT — R\.M\.|FT — M\.R\./.test(anteprima)) {
+    throw new Error('etichetta calendario non riservata: ' + anteprima);
+  }
+  await page.click('.modal-foot button:has-text("Salva")');
+  await page.waitForTimeout(600);
+  const t = await page.textContent('.settimana');
+  if (!/11:30/.test(t) || !/Rossi Mario/.test(t)) throw new Error('appuntamento non visibile in agenda: ' + t.replace(/\s+/g, ' ').slice(0, 160));
+});
+
+await step('agenda: link a Google Calendar corretto', async () => {
+  await page.click('.settimana .appunt');
+  await page.waitForSelector('.modal');
+  const url = await page.evaluate(async () => {
+    const cal = await import('/app/js/calendario.js');
+    const db = await import('/app/js/db.js');
+    const a = (await db.all('appuntamenti'))[0];
+    const p = await db.byId('pazienti', a.pazienteId);
+    return cal.linkGoogleCalendar(a, p, await db.getImpostazioni());
+  });
+  const u = new URL(url);
+  if (u.host !== 'calendar.google.com') throw new Error('host errato: ' + u.host);
+  if (!/^\d{8}T\d{6}\/\d{8}T\d{6}$/.test(u.searchParams.get('dates') || '')) {
+    throw new Error('intervallo malformato: ' + u.searchParams.get('dates'));
+  }
+  if (/Rossi/.test(u.searchParams.get('text') || '')) throw new Error('il titolo predefinito non deve riportare il cognome');
+  await page.click('.modal-head button[aria-label="Chiudi"]');
+});
+
+await step('la Home si chiama Home', async () => {
+  const voci = await page.locator('#nav a').allTextContents();
+  if (!voci.some(v => v.includes('Home'))) throw new Error('voce Home assente: ' + JSON.stringify(voci));
+  if (voci.some(v => /Cruscotto/.test(v))) throw new Error('la vecchia voce Cruscotto è ancora presente');
 });
 
 await step('backup e ripristino', async () => {
@@ -280,7 +337,9 @@ await step('backup e ripristino', async () => {
   const { readFileSync } = await import('node:fs');
   const b = JSON.parse(readFileSync(path, 'utf8'));
   if (b.data.pazienti.length !== 1) throw new Error('backup incompleto: ' + JSON.stringify(Object.keys(b.data)));
-  if (b.data.fatture[0].numero !== 1) throw new Error('numero fattura non nel backup');
+  // Il documento è stato rinumerato a 7 nel passaggio precedente: il backup deve rispecchiarlo.
+  if (b.data.fatture[0].numero !== 7) throw new Error('numero fattura errato nel backup: ' + b.data.fatture[0].numero);
+  if (!b.data.appuntamenti?.length) throw new Error('appuntamenti assenti dal backup');
 });
 
 await step('stampa cartella clinica', async () => {

@@ -22,6 +22,16 @@ export function logoStudio(imp) {
   });
 }
 
+/** Firma scansionata, da apporre sopra la riga di firma. */
+export function firmaStudio(imp) {
+  if (!imp?.firma) return null;
+  const mm = Number(imp.firmaAltezzaMm) || 15;
+  return h('img', {
+    src: imp.firma, alt: '',
+    style: { height: mm + 'mm', width: 'auto', maxWidth: '55mm', display: 'block', margin: '0 auto -1mm' }
+  });
+}
+
 export function intestazioneStudio(imp) {
   const nome = [imp.titolo, imp.nome, imp.cognome].filter(Boolean).join(' ').trim() || 'Studio di Fisioterapia';
   const via = [imp.indirizzo, [imp.cap, imp.citta].filter(Boolean).join(' '), imp.provincia ? `(${imp.provincia})` : '']
@@ -192,14 +202,21 @@ export function documentoFattura(fattura, paziente, imp, { etichettaCopia = '' }
   doc.appendChild(note);
 
   doc.appendChild(h('div', { class: 'sign-row avoid-break' },
-    h('div', { class: 'sign' }, 'Firma del professionista'),
-    h('div', { class: 'sign' }, 'Per quietanza / firma del paziente')));
+    h('div', { class: 'sign-col' },
+      imp.firmaInFattura ? firmaStudio(imp) : null,
+      h('div', { class: 'sign' }, 'Firma del professionista')),
+    h('div', { class: 'sign-col' },
+      h('div', { class: 'sign' }, 'Per quietanza / firma del paziente'))));
 
   return doc;
 }
 
-export function stampaFattura(fattura, paziente, imp) {
-  const copie = Math.max(1, Number(imp.copiePerFattura) || 1);
+/**
+ * @param {object} opzioni  { copie } per forzare il numero di copie
+ *   (una sola, per esempio, quando il documento va inviato via e-mail).
+ */
+export function stampaFattura(fattura, paziente, imp, opzioni = {}) {
+  const copie = Math.max(1, Number(opzioni.copie ?? imp.copiePerFattura) || 1);
   const etichette = copie >= 2 ? ['Originale per il paziente', 'Copia per il professionista', 'Copia'] : [''];
   const wrap = h('div');
   let esito = { adattato: true, punti: BASE_PT };
@@ -329,8 +346,10 @@ export function documentoCartella(episodio, paziente, sedute, imp, promCompilazi
     `Conservazione prevista: ${imp.conservazioneAnni || 10} anni.`));
 
   doc.appendChild(h('div', { class: 'sign-row avoid-break' },
-    h('div', { class: 'sign' }, 'Firma del fisioterapista'),
-    h('div', { class: 'sign' }, 'Data')));
+    h('div', { class: 'sign-col' },
+      imp.firmaInDocumentiClinici ? firmaStudio(imp) : null,
+      h('div', { class: 'sign' }, 'Firma del fisioterapista')),
+    h('div', { class: 'sign-col' }, h('div', { class: 'sign' }, 'Data'))));
 
   return doc;
 }
@@ -353,7 +372,7 @@ export function documentoModulo(tipo, paziente, imp) {
       h('div', { class: 'issuer-name' }, emittente.nome),
       imp.qualifica ? h('div', { class: 'issuer-role' }, imp.qualifica) : null,
       emittente.righe.map(r => h('div', r))),
-    h('div', { class: 'doc-title' }, h('h1', { style: 'font-size:12pt' }, TITOLI[tipo] || 'Modulo'))));
+    h('div', { class: 'doc-title' }, h('h1', { style: 'font-size:1.143em' }, TITOLI[tipo] || 'Modulo'))));
 
   const anagrafica = h('div', { class: 'party' },
     h('div', { class: 'party-label' }, 'Il/La sottoscritto/a'),
@@ -392,7 +411,7 @@ const CORPI = {
       h('li', h('strong', 'Natura del conferimento: '), 'il conferimento dei dati sanitari è necessario per l’erogazione della prestazione; il rifiuto rende impossibile procedere al trattamento fisioterapico.')),
     p(h('strong', 'Dichiarazione di consenso')),
     p('Preso atto dell’informativa, il/la sottoscritto/a:'),
-    h('ul', { style: 'padding-left:6mm; list-style:none' },
+    h('ul', { style: 'padding-left:1.4em; list-style:none' },
       h('li', '☐ presta   ☐ nega   il consenso al trattamento dei propri dati relativi alla salute per le finalità di cura sopra indicate;'),
       h('li', '☐ presta   ☐ nega   il consenso all’invio dei dati di spesa sanitaria al Sistema Tessera Sanitaria (in caso di opposizione la spesa non comparirà nella dichiarazione precompilata);'),
       h('li', '☐ presta   ☐ nega   il consenso all’invio di comunicazioni relative agli appuntamenti tramite telefono, SMS o e-mail;'),
@@ -440,7 +459,13 @@ const CORPI = {
   ]
 };
 
-export function stampaModulo(tipo, paziente, imp) { stampa(documentoModulo(tipo, paziente, imp)); }
+export function stampaModulo(tipo, paziente, imp) {
+  const doc = documentoModulo(tipo, paziente, imp);
+  // Un consenso che finisce su due fogli e' scomodo da far firmare e archiviare.
+  const esito = conMisurazione(doc, adattaAUnaPagina);
+  if (!esito.adattato) toast('Il modulo non entra in una pagina: verrà stampato su due fogli.');
+  stampa(doc);
+}
 
 export const MODULI = Object.entries(TITOLI).map(([k, v]) => ({ key: k, label: v }));
 

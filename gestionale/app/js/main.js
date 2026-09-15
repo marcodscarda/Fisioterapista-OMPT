@@ -16,13 +16,13 @@ import { vistaImpostazioni } from './views/impostazioni.js';
 const vista = () => document.getElementById('view');
 
 /* ---------- Rotte ---------- */
-S.rotta('/', async (r) => { briciole('Cruscotto'); await vistaDashboard(vista()); });
+S.rotta('/', async (r) => { briciole('Home'); await vistaDashboard(vista()); });
 S.rotta('/pazienti', async () => { briciole('Pazienti'); await vistaPazienti(vista()); });
 S.rotta('/paziente/:id', async ({ params }) => { briciole('Pazienti', 'Scheda'); await vistaPaziente(vista(), params); });
 S.rotta('/paziente/:id/:tab', async ({ params }) => { briciole('Pazienti', 'Scheda'); await vistaPaziente(vista(), params); });
 S.rotta('/cartella/:id', async ({ params }) => { briciole('Cartella clinica'); await vistaCartella(vista(), params); });
 S.rotta('/cartella/:id/:tab', async ({ params }) => { briciole('Cartella clinica'); await vistaCartella(vista(), params); });
-S.rotta('/agenda', async () => { briciole('Agenda sedute'); await vistaAgenda(vista()); });
+S.rotta('/agenda', async () => { briciole('Agenda'); await vistaAgenda(vista()); });
 S.rotta('/fatture', async () => { briciole('Fatture'); await vistaFatture(vista()); });
 S.rotta('/fattura/nuova/:pazienteId', async ({ params }) => {
   briciole('Fatture', 'Nuovo documento');
@@ -49,7 +49,7 @@ async function render(match, path) {
     clear(root).appendChild(h('div', { class: 'card' },
       h('h2', 'Pagina non trovata'),
       h('p', 'L’indirizzo ' + path + ' non corrisponde ad alcuna sezione.'),
-      h('a', { class: 'btn btn-primary', href: '#/' }, 'Torna al cruscotto')));
+      h('a', { class: 'btn btn-primary', href: '#/' }, 'Torna alla Home')));
     return;
   }
   attivaNav(path);
