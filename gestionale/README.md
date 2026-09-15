@@ -8,30 +8,55 @@ Funziona interamente nel browser, senza account e senza connessione: i dati rest
 
 ---
 
-## Avvio
+## Come si apre
 
-Serve solo Node.js (oppure un qualunque server statico).
+Una volta sola, la prima volta:
+
+1. **Scarica i file.** Vai alla pagina del progetto su GitHub, premi il pulsante verde
+   **Code** e scegli **Download ZIP**. Finché le modifiche non sono state unite al ramo
+   principale, seleziona prima il ramo giusto dal menu a tendina in alto a sinistra
+   (quello che inizia con `claude/`).
+2. **Estrai la cartella** (doppio clic sul file scaricato) e spostala dove preferisci —
+   per esempio in *Documenti*. Tienila lì: è la cartella del gestionale.
+3. **Installa Node.js**, se non ce l'hai: <https://nodejs.org/it/download>, versione **LTS**,
+   avanti-avanti. Serve solo a far funzionare il gestionale sul tuo computer.
+
+Poi, tutte le volte che vuoi usarlo, apri la cartella `gestionale` e fai **doppio clic** su:
+
+| Se hai… | Fai doppio clic su |
+|---|---|
+| Mac | **Avvia gestionale.command** |
+| Windows | **Avvia gestionale.bat** |
+
+Si apre una finestra con scritto *Gestionale OMPT avviato* e il gestionale compare da solo nel
+browser. **Lascia quella finestra aperta** mentre lavori: è il gestionale che gira. Per chiudere
+tutto, chiudi la finestra.
+
+Se il browser non si apre da solo, nella finestra c'è scritto l'indirizzo da copiare: di norma
+<http://127.0.0.1:4321>.
+
+> **Su Mac, la prima volta** il sistema può rifiutarsi di aprire il file perché scaricato da
+> internet. Fai clic destro sul file → **Apri** → **Apri**. Succede solo al primo avvio.
+
+### Note
+
+- **Non aprire `index.html` con un doppio clic**: il browser blocca i file aperti in quel modo e
+  il gestionale resterebbe bianco. Serve l'avviatore.
+- Il gestionale funziona **senza connessione a internet**.
+- Se la porta 4321 è occupata da un altro programma, ne viene scelta un'altra in automatico.
+- Il server ascolta solo su `127.0.0.1`: nessun altro dispositivo della rete può raggiungerlo.
+
+### Per chi usa il terminale
 
 ```bash
 cd gestionale
-npm start            # avvia su http://127.0.0.1:4321
+npm start                        # apre il browser da solo
+npm start -- 8080 --no-open      # porta a scelta, senza aprire il browser
+npm test                         # test della logica di calcolo
 ```
 
-In alternativa, senza Node:
-
-```bash
-python3 -m http.server 4321      # poi apri http://127.0.0.1:4321
-```
-
-> Non aprire `index.html` con un doppio clic: i moduli JavaScript richiedono il protocollo `http://`.
-
-Il server ascolta solo su `127.0.0.1`, quindi non è raggiungibile da altri dispositivi della rete.
-
-Per i test della logica di calcolo:
-
-```bash
-npm test
-```
+Senza Node, dalla cartella `gestionale`: `python3 -m http.server 4321`, poi apri
+<http://127.0.0.1:4321> a mano.
 
 ---
 

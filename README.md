@@ -20,10 +20,10 @@ Applicazione locale per la gestione dei pazienti:
 
 Funziona offline: i dati restano nel browser, nessuna informazione viene trasmessa.
 
-```bash
-cd gestionale
-npm start        # http://127.0.0.1:4321
-```
+Per aprirlo basta un doppio clic su **Avvia gestionale.command** (Mac) o
+**Avvia gestionale.bat** (Windows) dentro la cartella `gestionale`; il browser si apre da solo.
+Le istruzioni passo passo, compresa l'installazione di Node.js, sono in
+[gestionale/README.md](gestionale/README.md#come-si-apre).
 
 Documentazione: [uso e struttura](gestionale/README.md) ·
 [cartella OMPT](gestionale/docs/cartella-ompt.md) ·
