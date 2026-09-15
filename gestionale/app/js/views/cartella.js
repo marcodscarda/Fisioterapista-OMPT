@@ -11,6 +11,7 @@ import { PROMS, PROM_LIST, calcolaProm, confrontaProm, promSuggeriti } from '../
 import * as db from '../db.js';
 import * as S from '../state.js';
 import { stampaCartella } from '../print.js';
+import { vistaRagionamento } from './ragionamento.js';
 
 export async function vistaCartella(root, { id, tab = 'soggettivo' }) {
   const ep = await db.byId('episodi', id);
@@ -69,7 +70,8 @@ export async function vistaCartella(root, { id, tab = 'soggettivo' }) {
   const parti = CARTELLA.map(p => ({ key: p.key, label: p.label, badge: compilati(ep, p) }));
   const barra = tabs([...parti,
   { key: 'sedute', label: 'Sedute', badge: sedute.length },
-  { key: 'proms', label: 'Questionari', badge: ep.proms.length }],
+  { key: 'proms', label: 'Questionari', badge: ep.proms.length },
+  { key: 'supporto', label: '◈ Supporto' }],
     tab, (k) => S.vai(`/cartella/${id}/${k}`));
 
   const corpo = h('div');
@@ -94,6 +96,8 @@ export async function vistaCartella(root, { id, tab = 'soggettivo' }) {
       }));
   } else if (tab === 'sedute') {
     renderSedute(corpo, ep, paz, sedute, imp);
+  } else if (tab === 'supporto') {
+    vistaRagionamento(corpo, ep, paz, salva);
   } else {
     renderProms(corpo, ep, modificato, salva);
   }

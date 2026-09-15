@@ -131,6 +131,22 @@ Caratteristiche utili nella pratica:
 - **Diario sedute in formato SOAP**, con grafico dell'andamento NPRS.
 - **Salvataggio automatico** mentre si scrive.
 
+### Supporto al ragionamento clinico
+
+Una scheda dedicata legge la cartella e propone il **meccanismo del dolore** più coerente, le
+**ipotesi diagnostiche ordinate** con gli elementi a favore e contro, **come condurre l'esame
+fisico** (dose in base all'irritabilità e test consigliati, ciascuno con il suo perché), che cosa
+chiarire per restringere il campo e le **note per l'educazione** del paziente. Con un clic
+l'ipotesi scelta o il piano dell'esame finiscono in cartella.
+
+È un sistema a **regole esplicite, eseguito in locale**: ogni suggerimento mostra le ragioni che lo
+sostengono e nessun dato lascia il computer. Non è una diagnosi e non sostituisce il giudizio
+clinico. In presenza di un'urgenza (sospetta cauda equina, disfunzione arteriosa cervicale,
+instabilità craniocervicale…) la diagnosi differenziale viene messa da parte e resta l'indicazione
+all'invio.
+
+Dettagli, limiti e come aggiungere una regola: [`docs/supporto-ragionamento.md`](docs/supporto-ragionamento.md).
+
 ### Questionari (PROM)
 
 NPRS, PSFS, NDI, ODI, QuickDASH, LEFS, SPADI, TSK-11, PCS, FABQ, GROC.
@@ -147,6 +163,10 @@ regione corporea dell'episodio.
 - Le **sedute non fatturate** si importano nel documento con un clic, raggruppate per prestazione.
 - Calcolo automatico di: esenzione IVA art. 10 n. 18, **imposta di bollo** oltre soglia,
   rivalsa INPS, ritenuta d'acconto, sconto, scadenza.
+- **Logo dello studio** caricabile dalle impostazioni, ridimensionato automaticamente, stampato su
+  fattura e — a scelta — su cartella clinica e consensi.
+- **Adattamento a una pagina**: il documento viene misurato e rimpicciolito quanto basta per stare in
+  un foglio A4; oltre una ventina di righe avvisa che serviranno due fogli, invece di renderlo illeggibile.
 - **Anteprima di stampa a schermo** e stampa in più copie (originale per il paziente + copia per lo studio),
   con riquadro per la marca da bollo, note di legge e spazi per le firme.
 - Esportazione **CSV per il commercialista**.
@@ -196,6 +216,7 @@ gestionale/
 │       ├── fatture.js      calcoli fiscali (bollo, IVA, rivalsa, ritenuta, stato incasso)
 │       ├── print.js        fattura, cartella clinica, consensi da stampare
 │       ├── state.js        router a hash e stato condiviso
+│       ├── ragionamento/   motore di supporto clinico: contesto, ipotesi, regole
 │       ├── schema/         schema della cartella OMPT e definizione dei PROM
 │       ├── ui/             renderer dei form, body chart, componenti
 │       └── views/          le schermate

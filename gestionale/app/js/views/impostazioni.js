@@ -1,13 +1,14 @@
 /* ============================================================
    Vista: impostazioni dello studio, listino e backup
    ============================================================ */
-import { 
+import {
   add, h, clear, toast, num, uid, downloadFile, pickFile, readFileText, validaPIVA, validaCF, validaIBAN, fmtEUR, fmtDate
- } from '../util.js';
+} from '../util.js';
 import { modal, conferma, tabs } from '../ui/kit.js';
 import * as db from '../db.js';
 import * as S from '../state.js';
 import { stampaModulo } from '../print.js';
+import { caricaImmagine } from '../ui/immagini.js';
 
 export async function vistaImpostazioni(root, { tab = 'studio' } = {}) {
   const imp = { ...(await S.imp()), listino: [...(await S.imp()).listino.map(l => ({ ...l }))] };
@@ -70,6 +71,7 @@ export async function vistaImpostazioni(root, { tab = 'studio' } = {}) {
           campo('albo', 'Dicitura di iscrizione all’albo', { w: 'half' }),
           campo('numeroAlbo', 'Numero di iscrizione', { w: 'quarter' }),
           campo('ordineProvincia', 'Ordine provinciale', { w: 'quarter', hint: 'Es. OFI Palermo' }))),
+      riquadroLogo(imp),
       h('div', { class: 'card' },
         h('div', { class: 'card-head' }, h('h2', 'Privacy e conservazione')),
         h('div', { class: 'form-grid' },
@@ -194,6 +196,77 @@ export async function vistaImpostazioni(root, { tab = 'studio' } = {}) {
         h('p', { class: 'small' }, 'Elimina definitivamente tutti i dati dal browser. Esegui prima un backup.'),
         h('button', { class: 'btn btn-danger', onClick: () => azzera() }, '🗑 Cancella tutti i dati')));
   }
+}
+
+/** Riquadro di caricamento del logo, con anteprima sulla carta intestata. */
+function riquadroLogo(imp) {
+  const anteprima = h('div', {
+    style: {
+      background: '#fff', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)',
+      padding: '14px', minHeight: '86px', display: 'flex', alignItems: 'center', justifyContent: 'center'
+    }
+  });
+  const info = h('span', { class: 'hint' });
+
+  const disegna = () => {
+    clear(anteprima);
+    if (imp.logo) {
+      anteprima.appendChild(h('img', {
+        src: imp.logo, alt: 'Logo dello studio',
+        style: { height: (Number(imp.logoAltezzaMm) || 18) * 3.78 + 'px', width: 'auto', maxWidth: '100%' }
+      }));
+    } else {
+      anteprima.appendChild(h('span', { style: { color: '#999', fontSize: '.85rem' } },
+        'Nessun logo caricato'));
+    }
+  };
+  disegna();
+
+  const scegli = async () => {
+    const file = await pickFile('image/png,image/jpeg,image/svg+xml,image/*');
+    if (!file) return;
+    try {
+      const { dataUrl, larghezza, altezza, kb } = await caricaImmagine(file);
+      imp.logo = dataUrl;
+      info.textContent = `Caricato: ${larghezza}×${altezza} px, ${kb} kB.`;
+      info.style.color = 'var(--ok)';
+      disegna();
+      toast('Logo caricato. Ricordati di salvare le impostazioni.', 'ok');
+    } catch (e) {
+      info.textContent = e.message;
+      info.style.color = 'var(--danger)';
+      toast(e.message, 'err');
+    }
+  };
+
+  return h('div', { class: 'card' },
+    h('div', { class: 'card-head' }, h('h2', 'Logo')),
+    h('p', { class: 'faint small' },
+      'Compare in alto a sinistra sulle fatture e, se vuoi, anche sulla cartella clinica e sui moduli di consenso. ' +
+      'L’immagine viene ridimensionata al caricamento per non appesantire l’archivio e i backup.'),
+    h('div', { class: 'grid grid-2' },
+      anteprima,
+      h('div', null,
+        h('div', { class: 'btn-row', style: { marginBottom: '10px' } },
+          h('button', { class: 'btn btn-primary btn-sm', onClick: scegli }, '⬆ Carica un’immagine'),
+          imp.logo ? h('button', {
+            class: 'btn btn-sm btn-danger',
+            onClick: () => { imp.logo = ''; info.textContent = ''; disegna(); toast('Logo rimosso. Salva per confermare.'); }
+          }, '🗑 Rimuovi') : null),
+        info,
+        h('div', { class: 'field', style: { marginTop: '10px' } },
+          h('label', 'Altezza di stampa (mm)'),
+          h('input', {
+            type: 'number', min: '6', max: '40', step: '1', value: imp.logoAltezzaMm ?? 18,
+            onInput: (e) => { imp.logoAltezzaMm = num(e.target.value, 18); disegna(); }
+          }),
+          h('span', { class: 'hint' }, 'Indicativamente 15-20 mm su una fattura A4.')),
+        h('div', { class: 'check-row' },
+          h('input', {
+            type: 'checkbox', checked: !!imp.logoInDocumentiClinici,
+            onChange: (e) => { imp.logoInDocumentiClinici = e.target.checked; }
+          }),
+          h('label', 'Usa il logo anche su cartella clinica e consensi')))));
 }
 
 const bottoneSalva = (salva) => h('div', { class: 'btn-row end', style: { position: 'sticky', bottom: '12px' } },

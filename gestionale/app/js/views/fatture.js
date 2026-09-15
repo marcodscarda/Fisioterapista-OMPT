@@ -11,7 +11,7 @@ import {
   calcolaTotali, statoFattura, numeroCompleto, rigaVuota, righeDaSedute,
   METODI_PAGAMENTO, calcolaScadenza
 } from '../fatture.js';
-import { stampaFattura, documentoFattura, anteprima } from '../print.js';
+import { stampaFattura, documentoFattura, anteprima, adattaAUnaPagina } from '../print.js';
 import { registraIncasso } from './incassi.js';
 
 /* ------------------------------------------------------------------ */
@@ -179,6 +179,7 @@ export async function vistaFattura(root, { id, pazienteId }) {
   const emessa = !!f.numero;
 
   const pannelloTotali = h('div', { class: 'card' });
+  const notaPagina = h('span', { class: 'faint small' });
   const zonaRighe = h('div');
   const zonaAnteprima = h('div');
 
@@ -216,8 +217,20 @@ export async function vistaFattura(root, { id, pazienteId }) {
           `Incassato ${fmtEUR(st.incassato)}${st.residuo > 0 ? ` — residuo ${fmtEUR(st.residuo)}` : ''}`) : null) : null
     );
 
-    clear(zonaAnteprima).appendChild(anteprima(documentoFattura(f, paz, imp,
-      { etichettaCopia: imp.copiePerFattura >= 2 ? 'Originale per il paziente' : '' })));
+    // L'anteprima subisce lo stesso adattamento della stampa, cosi' quello che
+    // si vede a schermo e' quello che esce dalla stampante.
+    const docAnteprima = documentoFattura(f, paz, imp,
+      { etichettaCopia: imp.copiePerFattura >= 2 ? 'Originale per il paziente' : '' });
+    clear(zonaAnteprima).appendChild(anteprima(docAnteprima));
+    const esito = adattaAUnaPagina(docAnteprima);
+    clear(notaPagina).append(
+      esito.adattato
+        ? (esito.punti < 10.5
+          ? `Ridotta al ${Math.round(esito.punti / 10.5 * 100)}% per entrare in una pagina.`
+          : 'Entra in una pagina.')
+        : 'Troppe righe per una sola pagina: verranno stampati due fogli.');
+    notaPagina.className = 'faint small' + (esito.adattato ? '' : ' ');
+    notaPagina.style.color = esito.adattato ? '' : 'var(--warn)';
   }
 
   function renderRighe() {
@@ -372,7 +385,8 @@ export async function vistaFattura(root, { id, pazienteId }) {
     h('div', { class: 'card' },
       h('div', { class: 'card-head' }, h('h3', 'Anteprima di stampa'),
         h('span', { class: 'spacer' }),
-        h('span', { class: 'faint small' }, `Verranno stampate ${imp.copiePerFattura || 1} copie`)),
+        notaPagina,
+        h('span', { class: 'faint small' }, ` · ${imp.copiePerFattura || 1} copie`)),
       zonaAnteprima)
   );
 

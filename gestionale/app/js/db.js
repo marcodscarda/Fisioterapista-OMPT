@@ -157,6 +157,9 @@ export const IMPOSTAZIONI_DEFAULT = {
   email: '',
   pec: '',
   sitoWeb: '',
+  logo: '',                        // data URL, ridimensionato al caricamento
+  logoAltezzaMm: 18,               // altezza di stampa del logo
+  logoInDocumentiClinici: true,
   // Dati fiscali
   partitaIva: '',
   codiceFiscale: '',

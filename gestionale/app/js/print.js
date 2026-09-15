@@ -2,7 +2,7 @@
    Generazione dei documenti cartacei:
    fattura, cartella clinica, informativa e consensi.
    ============================================================ */
-import { h, clear, fmtDate, fmtDateLong, fmtEUR, fullName, nz, age, isEmptyVal } from './util.js';
+import { h, clear, fmtDate, fmtDateLong, fmtEUR, fullName, nz, age, isEmptyVal, toast } from './util.js';
 import { calcolaTotali, numeroCompleto, noteFattura } from './fatture.js';
 import { CARTELLA, SEDUTA } from './schema/ompt.js';
 import { PROMS, calcolaProm } from './schema/proms.js';
@@ -10,6 +10,18 @@ import { PROMS, calcolaProm } from './schema/proms.js';
 /* ------------------------------------------------------------------ */
 /* Helper comuni                                                       */
 /* ------------------------------------------------------------------ */
+/** Riquadro con il logo, se caricato. L'altezza e' quella impostata dall'utente. */
+export function logoStudio(imp) {
+  if (!imp?.logo) return null;
+  const mm = Number(imp.logoAltezzaMm) || 18;
+  return h('img', {
+    src: imp.logo,
+    alt: '',
+    class: 'doc-logo',
+    style: { height: mm + 'mm', width: 'auto', maxWidth: '60mm', display: 'block', marginBottom: '2mm' }
+  });
+}
+
 export function intestazioneStudio(imp) {
   const nome = [imp.titolo, imp.nome, imp.cognome].filter(Boolean).join(' ').trim() || 'Studio di Fisioterapia';
   const via = [imp.indirizzo, [imp.cap, imp.citta].filter(Boolean).join(' '), imp.provincia ? `(${imp.provincia})` : '']
@@ -29,6 +41,52 @@ export function intestazioneStudio(imp) {
 const blocco = (label, valore) => isEmptyVal(valore) ? null :
   h('div', { class: 'blk' }, h('span', { class: 'blk-l' }, label + ': '),
     h('span', { class: 'blk-v' }, Array.isArray(valore) ? valore.join(' · ') : String(valore)));
+
+/* ------------------------------------------------------------------ */
+/* Adattamento a una sola pagina                                       */
+/* ------------------------------------------------------------------ */
+const MM = 96 / 25.4;                    // pixel CSS per millimetro a 96 dpi
+const ALTEZZA_UTILE_MM = 297 - 14 - 16;  // A4 meno i margini di @page
+const LARGHEZZA_UTILE_MM = 210 - 14 - 14;
+const BASE_PT = 10.5;
+const MIN_PT = 7.5;
+
+/**
+ * Riduce la dimensione di base del documento finche' non entra in una pagina A4.
+ * Il documento va gia' inserito nel DOM: l'altezza si puo' misurare solo da reso.
+ * Sotto MIN_PT si rinuncia e si lascia impaginare su due pagine, perche' una
+ * fattura illeggibile sarebbe peggio di una fattura su due fogli.
+ * @returns {{adattato:boolean, punti:number}}
+ */
+export function adattaAUnaPagina(doc) {
+  const massimo = ALTEZZA_UTILE_MM * MM;
+  doc.style.fontSize = BASE_PT + 'pt';
+  if (doc.getBoundingClientRect().height <= massimo) return { adattato: true, punti: BASE_PT };
+
+  for (let pt = BASE_PT - 0.25; pt >= MIN_PT; pt -= 0.25) {
+    doc.style.fontSize = pt + 'pt';
+    if (doc.getBoundingClientRect().height <= massimo) return { adattato: true, punti: pt };
+  }
+  doc.style.fontSize = MIN_PT + 'pt';
+  return { adattato: false, punti: MIN_PT };
+}
+
+/** Contenitore di misura fuori schermo, con la larghezza reale della pagina stampata. */
+function conMisurazione(nodo, azione) {
+  const culla = h('div', {
+    style: {
+      position: 'absolute', left: '-10000px', top: '0',
+      width: LARGHEZZA_UTILE_MM + 'mm', visibility: 'hidden'
+    },
+    class: 'print-preview'
+  }, nodo);
+  document.body.appendChild(culla);
+  try {
+    return azione(nodo);
+  } finally {
+    culla.remove();
+  }
+}
 
 /** Invia in stampa il nodo costruito. */
 function stampa(nodo) {
@@ -57,6 +115,7 @@ export function documentoFattura(fattura, paziente, imp, { etichettaCopia = '' }
 
   doc.appendChild(h('div', { class: 'doc-head' },
     h('div', { class: 'issuer' },
+      logoStudio(imp),
       h('div', { class: 'issuer-name' }, emittente.nome),
       imp.qualifica ? h('div', { class: 'issuer-role' }, imp.qualifica) : null,
       emittente.righe.map(r => h('div', r))),
@@ -143,8 +202,15 @@ export function stampaFattura(fattura, paziente, imp) {
   const copie = Math.max(1, Number(imp.copiePerFattura) || 1);
   const etichette = copie >= 2 ? ['Originale per il paziente', 'Copia per il professionista', 'Copia'] : [''];
   const wrap = h('div');
+  let esito = { adattato: true, punti: BASE_PT };
   for (let i = 0; i < copie; i++) {
-    wrap.appendChild(documentoFattura(fattura, paziente, imp, { etichettaCopia: etichette[Math.min(i, etichette.length - 1)] }));
+    const doc = documentoFattura(fattura, paziente, imp, { etichettaCopia: etichette[Math.min(i, etichette.length - 1)] });
+    // Ogni copia viene misurata e rimpicciolita quanto basta a stare in un foglio.
+    esito = conMisurazione(doc, adattaAUnaPagina);
+    wrap.appendChild(doc);
+  }
+  if (!esito.adattato) {
+    toast('La fattura ha troppe righe per stare in una pagina: verrà stampata su due fogli.');
   }
   stampa(wrap);
 }
@@ -200,6 +266,9 @@ export function documentoCartella(episodio, paziente, sedute, imp, promCompilazi
   const doc = h('div', { class: 'doc' });
 
   doc.appendChild(h('div', { class: 'rec-title' },
+    imp.logoInDocumentiClinici && imp.logo
+      ? h('div', { style: { display: 'flex', justifyContent: 'center', marginBottom: '2mm' } }, logoStudio(imp))
+      : null,
     h('h1', 'Cartella clinica fisioterapica'),
     h('div', { class: 'sub' }, 'Valutazione e trattamento secondo il modello di ragionamento clinico OMPT / IFOMPT'),
     h('div', { class: 'sub' }, emittente.nome + (imp.qualifica ? ' — ' + imp.qualifica : ''))));
@@ -280,6 +349,7 @@ export function documentoModulo(tipo, paziente, imp) {
 
   doc.appendChild(h('div', { class: 'doc-head' },
     h('div', { class: 'issuer' },
+      imp.logoInDocumentiClinici ? logoStudio(imp) : null,
       h('div', { class: 'issuer-name' }, emittente.nome),
       imp.qualifica ? h('div', { class: 'issuer-role' }, imp.qualifica) : null,
       emittente.righe.map(r => h('div', r))),

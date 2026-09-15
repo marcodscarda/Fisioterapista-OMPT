@@ -148,6 +148,32 @@ await step('questionario PROM con punteggio', async () => {
   await page.waitForSelector('.card:has-text("Oswestry")', { timeout: 5000 });
 });
 
+await step('supporto al ragionamento', async () => {
+  await page.click('.tabs button:has-text("Supporto")');
+  await page.waitForSelector('.alert.info:has-text("non una diagnosi")', { timeout: 5000 });
+  const t = await page.textContent('#view');
+  for (const atteso of ['Meccanismo del dolore', 'Ipotesi in ordine di sostegno', 'Come condurre l’esame fisico']) {
+    if (!t.includes(atteso)) throw new Error('manca la sezione: ' + atteso);
+  }
+  // Il caso di prova ha una bandiera rossa (storia di neoplasia): deve emergere
+  // almeno un elemento da considerare prima di procedere.
+  const ipotesi = await page.locator('.card:has(h3:text-is("Ipotesi in ordine di sostegno")) details.sec').count();
+  const allerte = await page.locator('.alert.danger, .alert.warn').count();
+  if (ipotesi === 0 && allerte === 0) throw new Error('né ipotesi né allerte prodotte');
+
+  // Il pulsante deve scrivere davvero in cartella.
+  if (ipotesi > 0) {
+    await page.click('button:has-text("Usa come ipotesi principale")');
+    await page.waitForTimeout(600);
+    const scritta = await page.evaluate(async () => {
+      const db = await import('/app/js/db.js');
+      const ep = (await db.all('episodi'))[0];
+      return ep.cartella?.ipotesi?.ragionamentoPre?.ipotesiPrincipale || '';
+    });
+    if (!scritta.includes('Elementi a sostegno')) throw new Error('ipotesi non inserita in cartella: ' + scritta.slice(0, 80));
+  }
+});
+
 await step('impostazioni studio', async () => {
   await page.click('a[data-nav="/impostazioni"]');
   await page.waitForSelector('h2:has-text("Dati riportati")');

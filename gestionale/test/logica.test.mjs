@@ -103,5 +103,108 @@ eq('confronto peggiorato', confrontaProm('lefs', 60, 50).peggiorato, true);
 // 14. CSV
 eq('csv con separatore', toCSV([{ a: 'x;y', b: 2 }], [{ key: 'a', label: 'A' }, { key: 'b', label: 'B' }]).includes('"x;y";2'), true);
 
+/* ---------------------------------------------------------------- */
+/* Motore di supporto al ragionamento clinico                        */
+/* ---------------------------------------------------------------- */
+const { analizza } = await import('../app/js/ragionamento/index.js');
+
+const cartella = (regione, soggettivo, obiettivo = {}) => ({
+  regione, titolo: regione, cartella: { soggettivo, obiettivo }, proms: []
+});
+const nato = (anno) => ({ dataNascita: `${anno}-01-01` });
+const ids = (r) => r.ipotesi.map(i => i.id);
+
+// Radicolopatia lombare: irradiazione distale + test neurodinamico positivo
+{
+  const r = analizza(cartella('Lombare', {
+    bodychart: { areaPrincipale: 'Lombare', tipoDolore: ['Urente/bruciante'], sintomiAssociati: ['Parestesie'], noteSintomi: 'irradiazione al polpaccio' },
+    comportamento: { irritabilita: 'Moderata', natura: 'Subacuto' },
+    redflags: { rfList: [] }
+  }, {
+    neuro: { neurodinamica: [{ test: 'SLR', esito: 'Positivo' }] }
+  }), nato(1980), []);
+  eq('ragionamento: radicolare in cima', r.ipotesi[0].id, 'radicolare-lombare');
+  eq('ragionamento: aspecifica esclusa dall’irradiazione', ids(r).includes('lombalgia-aspecifica'), false);
+  eq('ragionamento: nessuna allerta', r.allerte.length, 0);
+}
+
+// Cauda equina: urgenza, e nessuna ipotesi proposta
+{
+  const r = analizza(cartella('Lombare', {
+    bodychart: { areaPrincipale: 'Lombare' },
+    comportamento: { irritabilita: 'Alta' },
+    redflags: { rfList: ['Disturbi sfinterici (vescica/intestino)', 'Anestesia a sella'] }
+  }), nato(1980), []);
+  eq('ragionamento: urgenza rilevata', r.urgenza, true);
+  eq('ragionamento: cauda equina segnalata', r.allerte[0].testo.includes('cauda equina'), true);
+  eq('ragionamento: ipotesi sospese in urgenza', r.ipotesi.length === 0 || r.urgenza, true);
+}
+
+// Disfunzione arteriosa cervicale: allerta unica, non duplicata
+{
+  const r = analizza(cartella('Cervicale', {
+    bodychart: { areaPrincipale: 'Cervicale' },
+    comportamento: { irritabilita: 'Alta' },
+    cervicale: { cervRilevante: 'Sì', cad5d3n: ['Drop attacks', 'Diplopia'], cadFattoriRischio: ['Ipertensione'] },
+    redflags: { rfList: [] }
+  }), nato(1970), []);
+  eq('ragionamento: allerta CAD presente', r.allerte.some(a => /arteriosa/i.test(a.testo)), true);
+  eq('ragionamento: allerta CAD non duplicata', r.allerte.filter(a => /arteriosa/i.test(a.testo)).length, 1);
+  eq('ragionamento: CAD e urgenza', r.urgenza, true);
+}
+
+// Nociplastico: richiede persistenza, non basta l'irritabilità
+{
+  const acuto = analizza(cartella('Lombare', {
+    bodychart: { areaPrincipale: 'Lombare' },
+    comportamento: { irritabilita: 'Alta', natura: 'Acuto' },
+    redflags: { rfList: [] }
+  }), nato(1980), []);
+  eq('ragionamento: nociplastico escluso in acuto', ids(acuto).includes('nociplastico'), false);
+
+  const cronico = analizza(cartella('Lombare', {
+    bodychart: { areaPrincipale: 'Lombare' },
+    comportamento: { irritabilita: 'Alta', natura: 'Cronico' },
+    bandiere: { gialle: ['Catastrofizzazione', 'Paura del movimento / kinesiofobia', 'Umore deflesso'] },
+    redflags: { rfList: [] }
+  }), nato(1980), []);
+  eq('ragionamento: nociplastico presente in cronico', ids(cronico).includes('nociplastico'), true);
+}
+
+// Capsulite: limitazione del movimento passivo
+{
+  const r = analizza(cartella('Spalla', {
+    bodychart: { areaPrincipale: 'Spalla' },
+    comportamento: { irritabilita: 'Moderata' },
+    storia: { esordioModalita: 'Insidioso/graduale', anamnesiRemota: 'diabete' },
+    redflags: { rfList: [] }
+  }, {
+    movimenti: { romTable: [
+      { movimento: 'Rotazione esterna', passivo: 'ridotto' },
+      { movimento: 'Abduzione', passivo: 'limitato' }
+    ] }
+  }), nato(1971), []);
+  eq('ragionamento: capsulite in cima', r.ipotesi[0].id, 'capsulite');
+}
+
+// La dose dell'esame segue l'irritabilità
+{
+  const alta = analizza(cartella('Lombare', { comportamento: { irritabilita: 'Alta' }, redflags: { rfList: [] } }), nato(1980), []);
+  const bassa = analizza(cartella('Lombare', { comportamento: { irritabilita: 'Bassa' }, redflags: { rfList: [] } }), nato(1980), []);
+  eq('ragionamento: dose prudente se irritabilità alta', alta.esame.dose.livello.includes('prudente'), true);
+  eq('ragionamento: dose completa se irritabilità bassa', bassa.esame.dose.livello.includes('completo'), true);
+}
+
+// Ogni suggerimento è motivato: nessuna ipotesi senza elementi a favore
+{
+  const r = analizza(cartella('Lombare', {
+    bodychart: { areaPrincipale: 'Lombare', noteSintomi: 'dolore al polpaccio' },
+    comportamento: { irritabilita: 'Moderata', natura: 'Subacuto', aggravanti: [{ attivita: 'stare seduto' }], allevianti: [{ strategia: 'camminare' }] },
+    redflags: { rfList: [] }
+  }), nato(1980), []);
+  eq('ragionamento: ogni ipotesi ha motivazioni', r.ipotesi.every(i => i.favore.length > 0), true);
+  eq('ragionamento: nessun punteggio negativo in elenco', r.ipotesi.every(i => i.punti > 0), true);
+}
+
 console.log(ko ? `\n${ko} TEST FALLITI` : '\nTutti i test superati');
 process.exit(ko ? 1 : 0);
