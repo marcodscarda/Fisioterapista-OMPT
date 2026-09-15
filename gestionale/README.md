@@ -37,26 +37,39 @@ Se il browser non si apre da solo, nella finestra c'è scritto l'indirizzo da co
 
 ### Su Mac, al primo avvio: «non può essere aperto»
 
-macOS blocca gli script scaricati da internet. Compare un avviso con i pulsanti *Sposta nel
-Cestino* e *Annulla*.
+macOS blocca per principio gli script scaricati da internet. Compare un avviso con i pulsanti
+*Sposta nel Cestino* e *Annulla*.
 
-**Clicca Annulla** — non spostare nulla nel Cestino, il file non ha niente che non va. Poi sbloccalo
-una volta sola:
+**Clicca Annulla** — il file non ha niente che non va. Poi scegli una delle due strade.
 
-1. Apri **Impostazioni di Sistema** (menu  in alto a sinistra → *Impostazioni di Sistema*).
-2. Vai su **Privacy e sicurezza** e scorri fino in fondo, alla sezione **Sicurezza**.
-3. Trovi la riga «*"Avvia gestionale.command" è stato bloccato per proteggere il Mac*» con accanto
-   il pulsante **Apri comunque**: cliccalo e conferma con password o Touch ID.
-4. Torna sul file e fai di nuovo **doppio clic**: stavolta compare un avviso con il pulsante
-   **Apri**. Cliccalo.
+**Strada A — la più rapida, non serve password.** Aggira il blocco senza sbloccare nulla:
 
-Da quel momento il doppio clic funziona sempre, senza più avvisi.
+1. Apri l'app **Terminale** (Cmd+Spazio, scrivi `terminale`, Invio).
+2. Scrivi `bash` seguito da **uno spazio**.
+3. **Trascina** il file *Avvia gestionale.command* dentro la finestra del Terminale: il percorso
+   si scrive da solo.
+4. Premi **Invio**.
 
-> Se al punto 3 non vedi quella riga, è perché compare solo **dopo** un tentativo di apertura e
-> resta per circa un'ora: rifai il doppio clic sul file, premi *Annulla*, e torna subito in
-> *Privacy e sicurezza*.
+Il gestionale parte. Le volte successive basta premere la **freccia su** nel Terminale per
+richiamare il comando, e Invio.
 
-Su macOS Monterey e precedenti è più rapido: **clic destro** sul file → **Apri** → **Apri**.
+**Strada B — sblocca il doppio clic una volta per sempre:**
+
+1. Menu  → **Impostazioni di Sistema**.
+2. **Privacy e sicurezza** → scorri fino in fondo, sezione **Sicurezza**.
+3. Trovi la riga «*"Avvia gestionale.command" è stato bloccato*» con accanto **Apri comunque**:
+   cliccalo e conferma con password o Touch ID.
+4. Torna sul file, **doppio clic**, e stavolta clicca **Apri**.
+
+Da quel momento il doppio clic funziona sempre.
+
+> Se al punto 3 non vedi quella riga, compare solo **dopo** un tentativo di apertura e resta per
+> circa un'ora: rifai il doppio clic, premi *Annulla*, e torna subito in *Privacy e sicurezza*.
+
+Su macOS Monterey e precedenti basta il **clic destro** sul file → **Apri** → **Apri**.
+
+Il blocco riguarda solo i file estratti da uno ZIP scaricato: con `git clone` macOS non li marca e
+il doppio clic funziona subito.
 
 ### Su Windows, al primo avvio: «Windows ha protetto il PC»
 

@@ -21,7 +21,28 @@ Compare un avviso con i pulsanti "Sposta nel Cestino" e "Annulla".
 
   --> Clicca ANNULLA. Non spostare nulla nel Cestino.
 
-Poi sbloccalo una volta sola:
+Non c'e' niente di sbagliato nel file: macOS blocca per principio gli
+script scaricati da internet. Hai due strade.
+
+
+STRADA A - la piu' rapida (non serve password, 4 passaggi)
+
+  1. Apri l'app "Terminale"
+     (Cmd+Spazio, scrivi "terminale", Invio)
+  2. Scrivi queste cinque lettere seguite da UNO SPAZIO:   bash
+  3. Trascina dentro la finestra del Terminale il file
+     "Avvia gestionale.command"
+     (il percorso si scrive da solo)
+  4. Premi Invio
+
+  Il gestionale parte. Lascia aperta la finestra del Terminale
+  mentre lavori.
+
+  Le volte successive, nel Terminale premi la freccia SU per
+  richiamare il comando e poi Invio.
+
+
+STRADA B - sblocca il doppio clic una volta per sempre
 
   1. Menu mela in alto a sinistra  ->  Impostazioni di Sistema
   2. Privacy e sicurezza  ->  scorri fino in fondo, sezione "Sicurezza"
@@ -30,14 +51,14 @@ Poi sbloccalo una volta sola:
      la password o il Touch ID.
   4. Torna sul file, doppio clic di nuovo, e stavolta clicca APRI.
 
-Da quel momento funziona sempre.
+  Da quel momento il doppio clic funziona sempre.
 
-Se al punto 3 non vedi quella riga: compare solo DOPO un tentativo di
-apertura e resta per circa un'ora. Rifai il doppio clic sul file, premi
-Annulla, e torna subito in Privacy e sicurezza.
+  Se al punto 3 non vedi quella riga: compare solo DOPO un tentativo
+  di apertura e resta per circa un'ora. Rifai il doppio clic sul file,
+  premi Annulla, e torna subito in Privacy e sicurezza.
 
-Su Mac piu' vecchi (Monterey o precedenti) basta il clic destro sul
-file -> Apri -> Apri.
+  Su Mac piu' vecchi (Monterey o precedenti) basta il clic destro sul
+  file -> Apri -> Apri.
 
 
 SE WINDOWS MOSTRA "WINDOWS HA PROTETTO IL PC"
