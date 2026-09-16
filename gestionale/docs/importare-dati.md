@@ -1,8 +1,13 @@
 # Portare qui i dati da un altro gestionale
 
-La procedura sta in **Impostazioni → Dati e backup → Importa dati**. È pensata sugli export di
-Zoho Invoice, ma la corrispondenza fra le colonne è modificabile, quindi funziona con qualunque
-CSV che contenga le stesse informazioni.
+La procedura si apre dal pulsante **⬆ Importa fatture** in alto nella pagina *Fatture*, oppure da
+**Impostazioni → Dati e backup → Importa dati**. È pensata sugli export di Zoho Invoice, ma la
+corrispondenza fra le colonne è modificabile, quindi funziona con qualunque CSV che contenga le
+stesse informazioni.
+
+Lo stesso pulsante serve anche dopo il primo travaso: se più avanti ti ritrovi altre fatture da
+caricare — un export di un anno precedente, un elenco preparato in un foglio di calcolo — passi di
+lì e ripeti la procedura. Quel che è già in archivio viene riconosciuto e saltato.
 
 ## Che cosa esportare da Zoho Invoice
 
@@ -10,9 +15,12 @@ Tre file, da importare **in quest'ordine**:
 
 | # | In Zoho | File | Che cosa diventa |
 |---|---|---|---|
-| 1 | Contatti → ⋮ → Esporta | `Contacts.csv` | i pazienti |
-| 2 | Fatture → ⋮ → Esporta | `Invoice.csv` | le fatture, con le loro voci |
-| 3 | Pagamenti ricevuti → ⋮ → Esporta | `Customer_Payment.csv` | gli incassi |
+| 1 | Contatti → ⋮ → Esporta | `Contacts.csv` / `Contatti.csv` | i pazienti |
+| 2 | Fatture → ⋮ → Esporta | `Invoice.csv` / `Fattura.csv` | le fatture, con le loro voci |
+| 3 | Pagamenti ricevuti → ⋮ → Esporta | `Customer_Payment.csv` / `Pagamento_cliente.csv` | gli incassi |
+
+I nomi cambiano a seconda della lingua dell'interfaccia di Zoho: le intestazioni vengono riconosciute
+in entrambe.
 
 L'ordine conta: le fatture si agganciano ai pazienti per nome, e gli incassi si agganciano alle
 fatture per numero del documento.
@@ -45,7 +53,11 @@ tutte le righe. Se la colonna è ambigua dall'inizio alla fine, assume il format
 (giorno/mese). Controlla l'anteprima.
 
 **Importi.** Sono riconosciute sia la scrittura italiana (`1.234,56`) sia quella anglosassone
-(`1,234.56`), con o senza simbolo di valuta.
+(`1,234.56`), con o senza simbolo di valuta. Quando una colonna è ambigua — `40.000` può valere
+quaranta o quarantamila — viene letta tutta la colonna: se da qualche parte compare un numero che
+con il punto come separatore delle migliaia sarebbe scritto male (`1000.000`), il punto viene trattato
+come separatore decimale in tutte le righe. È il caso degli export di Zoho, dove `40.000` sono
+quaranta euro.
 
 **Fatture su più righe.** Zoho scrive una riga per ogni voce della fattura: le righe con lo stesso
 numero vengono ricomposte in un unico documento con più voci.
@@ -63,8 +75,19 @@ differenza ti viene segnalata, così puoi controllarla.
 - *Prosegui la stessa serie*: dal numero di origine vengono lette le cifre finali, così la
   numerazione del gestionale riprende da dove si era fermata.
 
-**Codici fiscali.** Un codice che non supera il controllo formale viene importato ugualmente — così
-non perdi il dato — ma compare fra gli avvisi, per poterlo correggere.
+**Codici fiscali.** Negli export reali il codice fiscale finisce dove capita: in un campo suo, nel
+campo dell'indirizzo, o dentro un blocco di testo insieme a via e CAP. Il gestionale lo cerca in
+tutta la riga e prende quello con il carattere di controllo corretto. Un codice che non supera il
+controllo viene importato ugualmente — così non perdi il dato — ma compare con l'etichetta *da
+verificare* già nell'anteprima, e poi fra gli avvisi.
+
+**Indirizzi su più righe.** Quando via, comune, provincia e CAP sono ammassati in un unico campo
+(`Via degli Astronauti 61 bis` / `90072 Altofonte (PA)`), vengono separati nei campi giusti. Una riga
+viene letta come località solo se porta un CAP o una sigla di provincia, così una via non finisce per
+sbaglio nel campo del comune.
+
+**Titoli davanti al nome.** `Sig.ra`, `Dott.`, `Prof.` e simili vengono tolti dal nome del paziente e
+ignorati anche quando si confrontano i nomi per riconoscere un paziente già presente.
 
 **Fatture annullate.** Gli stati `Void` o simili vengono importati come documenti annullati.
 

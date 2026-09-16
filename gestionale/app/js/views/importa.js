@@ -148,7 +148,11 @@ export async function vistaImporta(root) {
       return tabella({
         colonne: [
           { label: 'Cognome e nome', cell: (c) => h('strong', [c.cognome, c.nome].filter(Boolean).join(' ')) },
-          { label: 'Codice fiscale', cell: (c) => h('span', { class: 'small mono' }, nz(c.codiceFiscale, '')) },
+          {
+            label: 'Codice fiscale', cell: (c) => c.cfDaVerificare
+              ? h('span', h('span', { class: 'small mono' }, c.codiceFiscale), ' ', badge('da verificare', 'warn'))
+              : h('span', { class: 'small mono' }, nz(c.codiceFiscale, ''))
+          },
           { label: 'Contatti', cell: (c) => h('span', { class: 'small' }, [c.telefono, c.email].filter(Boolean).join(' · ')) },
           { label: 'Città', cell: (c) => h('span', { class: 'small' }, nz(c.citta, '')) }
         ], righe: primi

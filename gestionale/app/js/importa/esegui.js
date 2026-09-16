@@ -7,10 +7,13 @@
    mappatura, non moltiplica i dati.
    ============================================================ */
 import { normalize, fullName, uid, round2, yearOf, todayISO, validaCF } from '../util.js';
-import { traduciMetodo } from './zoho.js';
+import { traduciMetodo, senzaTitolo } from './zoho.js';
 import * as db from '../db.js';
 
-const chiaveNome = (cognome, nome) => normalize([cognome, nome].filter(Boolean).join(' ')).replace(/\s+/g, ' ').trim();
+// Il confronto ignora titoli, punteggiatura e spazi ripetuti: gli export
+// scrivono "Sig.ra Maria Rossi" dove l'anagrafica ha "Rossi Maria".
+const chiaveNome = (cognome, nome) => normalize(senzaTitolo([cognome, nome].filter(Boolean).join(' ')))
+  .replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
 const chiaveCF = (cf) => normalize(cf).replace(/[^a-z0-9]/g, '');
 
 /** Indice dei pazienti esistenti, per codice fiscale e per nome. */
@@ -32,7 +35,7 @@ const trovaPaziente = (idx, { codiceFiscale, cognome, nome, displayOriginale }) 
     if (p) return p;
   }
   return idx.perNome.get(chiaveNome(cognome, nome))
-    || (displayOriginale ? idx.perNome.get(normalize(displayOriginale).replace(/\s+/g, ' ').trim()) : null)
+    || (displayOriginale ? idx.perNome.get(chiaveNome(displayOriginale, '')) : null)
     || null;
 };
 
@@ -181,7 +184,7 @@ export async function importaFatture(fatture, imp, {
 }
 
 const dividi = (completo) => {
-  const parti = String(completo || '').trim().split(/\s+/).filter(Boolean);
+  const parti = senzaTitolo(completo).split(/\s+/).filter(Boolean);
   if (!parti.length) return { nome: '', cognome: 'Sconosciuto' };
   if (parti.length === 1) return { nome: '', cognome: parti[0] };
   return { nome: parti.slice(0, -1).join(' '), cognome: parti.at(-1) };

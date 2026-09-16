@@ -76,12 +76,25 @@ export function leggiTabella(testo, separatore) {
  * Interpreta un importo scritto con convenzioni diverse.
  * "1.234,56" (italiana) e "1,234.56" (anglosassone) devono dare lo stesso numero.
  */
-export function numeroDaTesto(v) {
+export function numeroDaTesto(v, formato = 'auto') {
   if (typeof v === 'number') return Number.isFinite(v) ? v : 0;
   let s = String(v ?? '').trim().replace(/[€$£\s ]/g, '');
   if (!s) return 0;
   const negativo = /^\(.*\)$/.test(s);
   if (negativo) s = s.slice(1, -1);
+
+  // Se l'analisi dell'intera colonna ha stabilito quale sia il separatore
+  // decimale, quella conclusione vale piu' di qualunque euristica sul singolo
+  // valore: "500.000" da solo sembra migliaia, ma in una colonna che contiene
+  // anche "1000.000" il punto e' per forza decimale.
+  if (formato === 'punto') {
+    const diretto = Number(s.replace(/,/g, ''));
+    return Number.isFinite(diretto) ? (negativo ? -diretto : diretto) : 0;
+  }
+  if (formato === 'virgola') {
+    const diretto = Number(s.replace(/\./g, '').replace(',', '.'));
+    return Number.isFinite(diretto) ? (negativo ? -diretto : diretto) : 0;
+  }
 
   const ultimaVirgola = s.lastIndexOf(',');
   const ultimoPunto = s.lastIndexOf('.');
@@ -101,6 +114,30 @@ export function numeroDaTesto(v) {
   const n = Number(s);
   if (!Number.isFinite(n)) return 0;
   return negativo ? -n : n;
+}
+
+/**
+ * Determina il separatore decimale guardando l'intera colonna.
+ * Un valore isolato come "500.000" e' ambiguo; se pero' nella stessa colonna
+ * compare "1000.000" o "40.00", il punto non puo' essere separatore di
+ * migliaia e la lettura giusta vale per tutti i valori.
+ * @returns {'punto'|'virgola'|'auto'}
+ */
+export function indovinaFormatoNumero(valori) {
+  let conVirgola = 0, puntoNonRaggruppabile = 0, entrambi = 0;
+  for (const v of valori) {
+    const t = String(v ?? '').trim().replace(/[^0-9.,-]/g, '');
+    if (!t || !/[0-9]/.test(t)) continue;
+    const haPunto = t.includes('.'), haVirgola = t.includes(',');
+    if (haPunto && haVirgola) { entrambi++; continue; }
+    if (haVirgola) { conVirgola++; continue; }
+    // Compatibile con i separatori di migliaia? (1-3 cifre, poi gruppi da 3)
+    if (haPunto && !/^-?[0-9]{1,3}(\.[0-9]{3})+$/.test(t)) puntoNonRaggruppabile++;
+  }
+  if (entrambi) return 'auto';                   // ogni valore si legge da se'
+  if (puntoNonRaggruppabile) return 'punto';
+  if (conVirgola) return 'virgola';
+  return 'auto';
 }
 
 const MESI_EN = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 };

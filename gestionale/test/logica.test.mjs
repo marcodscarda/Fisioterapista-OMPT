@@ -337,6 +337,69 @@ eq('csv: formato indeducibile', csvMod.indovinaFormatoData(['01/02/2026']), 'aut
   eq('zoho: prezzo ricavato dall’importo della voce', senzaPrezzo[0].righe[0].prezzo, 50);
 }
 
+// Anagrafiche come le scrive Zoho: titolo davanti al nome, codice fiscale e
+// indirizzo ammucchiati in un unico campo a piu' righe.
+eq('zoho: titolo tolto dal cognome', zoho.senzaTitolo('Sig.ra Maria Rossi'), 'Maria Rossi');
+eq('zoho: titolo abbreviato senza punto', zoho.senzaTitolo('Dott ssa Anna Bianchi'), 'Anna Bianchi');
+eq('zoho: nessun titolo da togliere', zoho.senzaTitolo('Viale Europa 3'), 'Viale Europa 3');
+
+eq('zoho: codice fiscale cercato in tutta la riga',
+  zoho.cercaCodiceFiscale({ nome: 'Tizio', indirizzo: 'GHZNSN97H06G273M\nVia Roma 1' }), 'GHZNSN97H06G273M');
+eq('zoho: fra due codici vince quello valido',
+  zoho.cercaCodiceFiscale({ a: 'SCRMCD94R03G273C', b: 'GHZNSN97H06G273M' }), 'GHZNSN97H06G273M');
+eq('zoho: codice con refuso conservato come ripiego',
+  zoho.cercaCodiceFiscale({ a: 'SCRMCD94R03G273C' }), 'SCRMCD94R03G273C');
+eq('zoho: nessun codice fiscale', zoho.cercaCodiceFiscale({ a: 'Via Roma 1', b: '90100' }), '');
+
+{
+  const l = (righe) => zoho.separaLocalita(righe);
+  eq('localita: CAP, comune e provincia fra parentesi',
+    l(['Via degli Astronauti 61', '90072 Altofonte (PA)']),
+    { via: 'Via degli Astronauti 61', citta: 'Altofonte', provincia: 'PA', cap: '90072' });
+  eq('localita: provincia dopo la virgola',
+    l(['via Ventura 5', '90143 Palermo, Pa']),
+    { via: 'via Ventura 5', citta: 'Palermo', provincia: 'PA', cap: '90143' });
+  eq('localita: CAP su una riga a se',
+    l(['Via Cortimiglia 8', 'Corleone (Pa)', '90034']),
+    { via: 'Via Cortimiglia 8', citta: 'Corleone', provincia: 'PA', cap: '90034' });
+  eq('localita: comune isolato accanto a CAP e provincia',
+    l(['Via Lauriano 40', 'Palermo Italia', '90142 PA']),
+    { via: 'Via Lauriano 40', citta: 'Palermo', provincia: 'PA', cap: '90142' });
+  eq('localita: una via non viene scambiata per un comune',
+    l(['Via samotracia snc']),
+    { via: 'Via samotracia snc', citta: '', provincia: '', cap: '' });
+}
+
+{
+  // Riga reale: il codice fiscale sta nel campo dell'indirizzo, il titolo nel
+  // nome visualizzato e l'indirizzo vero nel secondo campo.
+  const [c] = zoho.trasformaContatti(
+    [{
+      'Display Name': 'Sig.ra Susanna Galati', 'First Name': 'Susanna', 'Last Name': 'Galati',
+      'Billing Address': 'GLTSNN66B53G273T\nVia degli Astronauti 61 bis\n90072 Altofonte (PA)',
+      'Billing Street2': '', 'Billing City': '', 'Billing Code': ''
+    }],
+    {
+      cognome: 'Last Name', nome: 'First Name', displayName: 'Display Name',
+      indirizzo: 'Billing Street2', citta: 'Billing City', cap: 'Billing Code'
+    });
+  eq('contatto reale: codice fiscale recuperato', c.codiceFiscale, 'GLTSNN66B53G273T');
+  eq('contatto reale: indirizzo senza codice fiscale', c.indirizzo, 'Via degli Astronauti 61 bis');
+  eq('contatto reale: comune, provincia e CAP', [c.citta, c.provincia, c.cap], ['Altofonte', 'PA', '90072']);
+  eq('contatto reale: titolo tolto', [c.cognome, c.nome], ['Galati', 'Susanna']);
+  eq('contatto reale: codice fiscale non da verificare', c.cfDaVerificare, false);
+}
+
+// Colonna di importi in cui il punto e' il separatore decimale ("1000.000").
+eq('csv: formato numero dedotto dalla colonna',
+  csvMod.indovinaFormatoNumero(['40.000', '50.000', '500.000', '1000.000']), 'punto');
+eq('csv: colonna con la virgola decimale',
+  csvMod.indovinaFormatoNumero(['40,00', '250,50']), 'virgola');
+eq('csv: colonna con entrambi i separatori lasciata al riconoscimento automatico',
+  csvMod.indovinaFormatoNumero(['40,00', '1.250,50']), 'auto');
+eq('csv: importo letto col punto decimale', csvMod.numeroDaTesto('1000.000', 'punto'), 1000);
+eq('csv: importo letto con la virgola decimale', csvMod.numeroDaTesto('1.250,50', 'virgola'), 1250.5);
+
 eq('zoho: nome unico diviso', zoho.dividiNome('Mario Rossi'), { nome: 'Mario', cognome: 'Rossi' });
 eq('zoho: nome composto', zoho.dividiNome('Maria Teresa De Luca'), { nome: 'Maria Teresa De', cognome: 'Luca' });
 eq('zoho: metodo bonifico', zoho.traduciMetodo('Bank Transfer'), 'Bonifico bancario');

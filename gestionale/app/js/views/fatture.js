@@ -83,6 +83,7 @@ export async function vistaFatture(root) {
       h('input', { type: 'search', placeholder: 'Cerca per paziente o numero…', onInput: (e) => { stato.q = e.target.value; render(); } }),
       h('span', { class: 'spacer' }),
       h('button', { class: 'btn btn-sm', onClick: () => esportaFatture(calcolate(), stato.anno) }, '⬇ CSV per il commercialista'),
+      h('button', { class: 'btn btn-sm', onClick: () => S.vai('/importa'), title: 'Importa fatture, pazienti e incassi da Zoho Invoice o da un altro gestionale' }, '⬆ Importa fatture'),
       h('button', { class: 'btn btn-primary', onClick: () => scegliPaziente() }, '+ Nuova fattura')),
     riepilogo, lista);
   render();
