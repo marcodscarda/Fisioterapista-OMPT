@@ -83,6 +83,14 @@ Se compare la finestra azzurra di SmartScreen, clicca **Ulteriori informazioni**
 Questo blocco riguarda **solo** il file scaricato da internet. Se invece prelevi il progetto con
 `git clone`, macOS non lo marca e il doppio clic funziona subito.
 
+### Dal telefono
+
+Con `npm start -- --rete` il gestionale diventa raggiungibile da telefono e tablet sulla stessa rete
+Wi-Fi, protetto da un codice di accesso generato a ogni avvio; una volta aperto si può aggiungere
+alla schermata Home e si comporta come un'app. I dati restano sul computer: il telefono è una
+finestra su quell'archivio, non una copia. Condizioni e cautele:
+[`docs/da-telefono.md`](docs/da-telefono.md).
+
 ### Note
 
 - **Non aprire `index.html` con un doppio clic**: il browser blocca i file aperti in quel modo e
@@ -97,6 +105,7 @@ Questo blocco riguarda **solo** il file scaricato da internet. Se invece prelevi
 cd gestionale
 npm start                        # apre il browser da solo
 npm start -- 8080 --no-open      # porta a scelta, senza aprire il browser
+npm start -- --rete              # accessibile da telefono sulla stessa Wi-Fi
 npm test                         # test della logica di calcolo
 ```
 
@@ -130,6 +139,15 @@ Caratteristiche utili nella pratica:
 - **Asterischi** definiti una volta e **riproposti automaticamente in ogni seduta** per la rivalutazione.
 - **Diario sedute in formato SOAP**, con grafico dell'andamento NPRS.
 - **Salvataggio automatico** mentre si scrive.
+
+### Importazione da un altro gestionale
+
+Se hai già fatturato con **Zoho Invoice** (o con un altro programma che esporta in CSV), anagrafiche,
+fatture e incassi si portano qui da *Impostazioni → Dati e backup → Importa dati*. Il tipo di file e
+la corrispondenza fra le colonne sono proposti in automatico e restano modificabili; l'anteprima
+mostra il risultato prima di scrivere. La procedura è ripetibile senza creare duplicati, ricompone le
+fatture che l'export scrive su più righe e conserva il totale con cui ciascun documento fu emesso.
+Dettagli: [`docs/importare-dati.md`](docs/importare-dati.md).
 
 ### Supporto al ragionamento clinico
 
@@ -232,6 +250,7 @@ gestionale/
 │       ├── fatture.js      calcoli fiscali (bollo, IVA, rivalsa, ritenuta, stato incasso)
 │       ├── print.js        fattura, cartella clinica, consensi da stampare
 │       ├── state.js        router a hash e stato condiviso
+│       ├── importa/       lettura CSV e importazione da altri gestionali
 │       ├── ragionamento/   motore di supporto clinico: contesto, ipotesi, regole
 │       ├── schema/         schema della cartella OMPT e definizione dei PROM
 │       ├── ui/             renderer dei form, body chart, componenti

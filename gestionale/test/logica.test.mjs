@@ -259,5 +259,115 @@ eq('calendario: predefinito riservato',
   eq('Google: titolo riservato', url.searchParams.get('text'), 'FT — M.R.');
 }
 
+/* ---------------------------------------------------------------- */
+/* Importazione da CSV                                                */
+/* ---------------------------------------------------------------- */
+const csvMod = await import('../app/js/importa/csv.js');
+const zoho = await import('../app/js/importa/zoho.js');
+
+// Importi: convenzione italiana e anglosassone devono coincidere
+eq('csv: 1.234,56 italiano', csvMod.numeroDaTesto('1.234,56'), 1234.56);
+eq('csv: 1,234.56 anglosassone', csvMod.numeroDaTesto('1,234.56'), 1234.56);
+eq('csv: migliaia senza decimali', csvMod.numeroDaTesto('1.234'), 1234);
+eq('csv: valuta e spazi', csvMod.numeroDaTesto('€ 1.234,50'), 1234.5);
+eq('csv: negativo fra parentesi', csvMod.numeroDaTesto('(12,50)'), -12.5);
+eq('csv: vuoto', csvMod.numeroDaTesto(''), 0);
+
+// Date: l'ambiguita' gg/mm si scioglie guardando l'intera colonna
+eq('csv: data ISO', csvMod.dataDaTesto('2026-01-15'), '2026-01-15');
+eq('csv: data gg/mm/aaaa', csvMod.dataDaTesto('15/01/2026'), '2026-01-15');
+eq('csv: mese scritto', csvMod.dataDaTesto('12 Jan 2026'), '2026-01-12');
+eq('csv: ambigua letta come gg/mm', csvMod.dataDaTesto('03/04/2026'), '2026-04-03');
+eq('csv: ambigua letta come mm/gg', csvMod.dataDaTesto('03/04/2026', 'mm/gg'), '2026-03-04');
+eq('csv: formato dedotto (gg/mm)', csvMod.indovinaFormatoData(['15/01/2026', '03/04/2026']), 'gg/mm');
+eq('csv: formato dedotto (mm/gg)', csvMod.indovinaFormatoData(['01/15/2026', '04/03/2026']), 'mm/gg');
+eq('csv: formato indeducibile', csvMod.indovinaFormatoData(['01/02/2026']), 'auto');
+
+// Separatore e virgolette
+{
+  const testo = [
+    'A;B;C',
+    '1;"con; punto e virgola";"virgolette ""doppie"""',
+    '2;"a capo\ndentro";x'
+  ].join('\r\n');
+  eq('csv: separatore rilevato', csvMod.rilevaSeparatore(testo), ';');
+  const { intestazioni, dati } = csvMod.leggiTabella(testo);
+  eq('csv: intestazioni', intestazioni, ['A', 'B', 'C']);
+  eq('csv: separatore dentro virgolette', dati[0].B, 'con; punto e virgola');
+  eq('csv: virgolette raddoppiate', dati[0].C, 'virgolette "doppie"');
+  eq('csv: a capo dentro il campo', dati[1].B, 'a capo\ndentro');
+}
+
+// Riconoscimento del tracciato e mappatura
+{
+  const intContatti = ['Display Name', 'First Name', 'Last Name', 'EmailID', 'MobilePhone', 'Billing City'];
+  eq('zoho: riconosce i contatti', zoho.riconosciTracciato(intContatti), 'contatti');
+  const m = zoho.mappaturaProposta('contatti', intContatti);
+  eq('zoho: mappa cognome', m.cognome, 'Last Name');
+  eq('zoho: mappa email', m.email, 'EmailID');
+
+  const intFatture = ['Invoice Date', 'Invoice Number', 'Customer Name', 'Item Desc', 'Quantity', 'Item Price', 'Total'];
+  eq('zoho: riconosce le fatture', zoho.riconosciTracciato(intFatture), 'fatture');
+
+  const intIncassi = ['Date', 'CustomerName', 'Mode', 'Amount', 'Invoice Number', 'Invoice Payment Applied Amount'];
+  eq('zoho: riconosce gli incassi', zoho.riconosciTracciato(intIncassi), 'incassi');
+  eq('zoho: tracciato ignoto', zoho.riconosciTracciato(['Pippo', 'Pluto']), null);
+  eq('zoho: mappatura tollerante ad accenti e punteggiatura',
+    zoho.mappaturaProposta('contatti', ['E-Mail ID', 'Citta', 'Telefono']).email, 'E-Mail ID');
+}
+
+// Ricomposizione delle fatture da righe multiple
+{
+  const righe = [
+    { N: 'INV-1', D: '15/01/2026', C: 'Mario Rossi', Desc: 'Valutazione', Q: '1', P: '70,00', T: '222,00' },
+    { N: 'INV-1', D: '15/01/2026', C: 'Mario Rossi', Desc: 'Seduta', Q: '3', P: '50,00', T: '222,00' },
+    { N: 'INV-2', D: '03/02/2026', C: 'Giulia Conti', Desc: 'Seduta', Q: '2', P: '50,00', T: '100,00' }
+  ];
+  const mappa = { numero: 'N', data: 'D', cliente: 'C', descrizione: 'Desc', quantita: 'Q', prezzo: 'P', totale: 'T' };
+  const out = zoho.trasformaFatture(righe, mappa);
+  eq('zoho: due documenti da tre righe', out.length, 2);
+  eq('zoho: voci raggruppate', out[0].righe.length, 2);
+  eq('zoho: somma delle voci', out[0].sommaRighe, 220);
+  eq('zoho: scarto pari al bollo', out[0].scarto, 2);
+  eq('zoho: data convertita', out[0].data, '2026-01-15');
+
+  const senzaPrezzo = zoho.trasformaFatture(
+    [{ N: 'X', D: '2026-01-01', C: 'Tizio', Desc: 'Voce', Q: '4', I: '200,00' }],
+    { numero: 'N', data: 'D', cliente: 'C', descrizione: 'Desc', quantita: 'Q', importoRiga: 'I' });
+  eq('zoho: prezzo ricavato dall’importo della voce', senzaPrezzo[0].righe[0].prezzo, 50);
+}
+
+eq('zoho: nome unico diviso', zoho.dividiNome('Mario Rossi'), { nome: 'Mario', cognome: 'Rossi' });
+eq('zoho: nome composto', zoho.dividiNome('Maria Teresa De Luca'), { nome: 'Maria Teresa De', cognome: 'Luca' });
+eq('zoho: metodo bonifico', zoho.traduciMetodo('Bank Transfer'), 'Bonifico bancario');
+eq('zoho: metodo contanti', zoho.traduciMetodo('Cash'), 'Contanti');
+eq('zoho: metodo ignoto', zoho.traduciMetodo('Qualcosa'), 'Altro');
+
+const { numeroProgressivo } = await import('../app/js/importa/esegui.js');
+eq('import: progressivo da INV-000123', numeroProgressivo('INV-000123'), 123);
+eq('import: progressivo da 2026/45', numeroProgressivo('2026/45'), 45);
+eq('import: nessun progressivo', numeroProgressivo('ABC'), null);
+
+// Bollo forzato: un documento storico conserva il totale con cui fu emesso
+{
+  const impB = { regimeFiscale: 'forfettario', esenzioneIva: 'art10', bolloSoglia: 77.47, bolloImporto: 2, bolloAddebitato: true };
+  const auto = calcolaTotali({ righe: [{ quantita: 1, prezzo: 100 }] }, impB);
+  eq('bollo automatico oltre soglia', [auto.bolloDovuto, auto.totaleDocumento], [true, 102]);
+  const forzatoNo = calcolaTotali({ righe: [{ quantita: 1, prezzo: 100 }], bolloForzato: false }, impB);
+  eq('bollo forzato assente conserva il totale', [forzatoNo.bolloDovuto, forzatoNo.totaleDocumento], [false, 100]);
+  const forzatoSi = calcolaTotali({ righe: [{ quantita: 1, prezzo: 50 }], bolloForzato: true }, impB);
+  eq('bollo forzato presente sotto soglia', [forzatoSi.bolloDovuto, forzatoSi.totaleDocumento], [true, 52]);
+}
+
+// Numero completo: i documenti importati conservano il numero di origine
+{
+  const { numeroCompleto, emessa } = await import('../app/js/fatture.js');
+  eq('numero importato', numeroCompleto({ numeroTesto: 'INV-000007', anno: 2026 }), 'INV-000007');
+  eq('numero proprio', numeroCompleto({ numero: 7, anno: 2026 }), '7/2026');
+  eq('bozza', numeroCompleto({}), '(bozza)');
+  eq('emessa con numero di origine', emessa({ numeroTesto: 'INV-1' }), true);
+  eq('bozza non emessa', emessa({}), false);
+}
+
 console.log(ko ? `\n${ko} TEST FALLITI` : '\nTutti i test superati');
 process.exit(ko ? 1 : 0);

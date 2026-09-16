@@ -8,7 +8,7 @@ import { modal, conferma, tabella, badge, vuoto } from '../ui/kit.js';
 import * as db from '../db.js';
 import * as S from '../state.js';
 import {
-  calcolaTotali, statoFattura, numeroCompleto, rigaVuota, righeDaSedute,
+  calcolaTotali, statoFattura, numeroCompleto, emessa as fatturaEmessa, rigaVuota, righeDaSedute,
   METODI_PAGAMENTO, calcolaScadenza
 } from '../fatture.js';
 import { stampaFattura, documentoFattura, anteprima, adattaAUnaPagina } from '../print.js';
@@ -41,14 +41,14 @@ export async function vistaFatture(root) {
     const filtrate = tutte
       .filter(r => stato.anno === 'tutti' || (r.f.anno || yearOf(r.f.data)) === Number(stato.anno))
       .filter(r => stato.filtro === 'tutte'
-        || (stato.filtro === 'bozze' && !r.f.numero)
-        || (stato.filtro === 'daincassare' && r.f.numero && ['aperta', 'parziale', 'scaduta'].includes(r.st.codice))
+        || (stato.filtro === 'bozze' && !fatturaEmessa(r.f))
+        || (stato.filtro === 'daincassare' && fatturaEmessa(r.f) && ['aperta', 'parziale', 'scaduta'].includes(r.st.codice))
         || (stato.filtro === 'incassate' && r.st.codice === 'pagata'))
       .filter(r => matches(stato.q, fullName(r.paziente), numeroCompleto(r.f), r.f.note));
 
-    const fatturato = round2(filtrate.filter(r => r.f.numero && !r.f.annullata).reduce((s, r) => s + r.tot.nettoAPagare, 0));
+    const fatturato = round2(filtrate.filter(r => fatturaEmessa(r.f) && !r.f.annullata).reduce((s, r) => s + r.tot.nettoAPagare, 0));
     const incassato = round2(filtrate.reduce((s, r) => s + r.st.incassato, 0));
-    const residuo = round2(filtrate.filter(r => r.f.numero && !r.f.annullata).reduce((s, r) => s + Math.max(0, r.st.residuo), 0));
+    const residuo = round2(filtrate.filter(r => fatturaEmessa(r.f) && !r.f.annullata).reduce((s, r) => s + Math.max(0, r.st.residuo), 0));
 
     add(clear(riepilogo), 
       box('Documenti', String(filtrate.length)),
@@ -64,7 +64,7 @@ export async function vistaFatture(root) {
         { label: 'Paziente', cell: (r) => h('div', fullName(r.paziente) || nz(r.f.intestatario, '—')) },
         { label: 'Totale', num: true, cell: (r) => fmtEUR(r.tot.nettoAPagare) },
         { label: 'Incassato', num: true, cell: (r) => r.st.incassato ? fmtEUR(r.st.incassato) : h('span', { class: 'faint' }, '—') },
-        { label: 'Stato', cell: (r) => r.f.numero ? badge(r.st.label, r.st.kind) : badge('bozza', '') }
+        { label: 'Stato', cell: (r) => fatturaEmessa(r.f) ? badge(r.st.label, r.st.kind) : badge('bozza', '') }
       ],
       righe: filtrate,
       onRowClick: (r) => S.vai('/fattura/' + r.f.id),
@@ -117,7 +117,7 @@ async function scegliPaziente() {
 }
 
 function esportaFatture(righe, anno) {
-  const dati = righe.filter(r => r.f.numero).map(r => ({
+  const dati = righe.filter(r => fatturaEmessa(r.f)).map(r => ({
     numero: numeroCompleto(r.f),
     data: fmtDate(r.f.data),
     intestatario: fullName(r.paziente) || r.f.intestatario || '',
@@ -176,7 +176,7 @@ export async function vistaFattura(root, { id, pazienteId }) {
   const paz = await S.paziente(f.pazienteId);
   if (paz && f.opposizioneSts == null) f.opposizioneSts = !!paz.consensi?.opposizioneSts;
   const incassi = f.id ? await S.incassiDi(f.id) : [];
-  const emessa = !!f.numero;
+  const emessa = fatturaEmessa(f);
 
   const pannelloTotali = h('div', { class: 'card' });
   const notaPagina = h('span', { class: 'faint small' });
@@ -316,7 +316,9 @@ export async function vistaFattura(root, { id, pazienteId }) {
           checkbox('Applica ritenuta d’acconto', f.ritenutaAttiva ?? imp.ritenutaAttiva,
             (v) => { f.ritenutaAttiva = v; aggiorna(); }),
           checkbox('Opposizione al Sistema Tessera Sanitaria', !!f.opposizioneSts,
-            (v) => { f.opposizioneSts = v; aggiorna(); }))),
+            (v) => { f.opposizioneSts = v; aggiorna(); }),
+          checkbox('Nessun bollo su questo documento', f.bolloForzato === false,
+            (v) => { f.bolloForzato = v ? false : null; aggiorna(); }))),
       h('div', { class: 'field w-full' }, h('label', 'Note da riportare in fattura'),
         h('textarea', { rows: 2, value: f.note || '', onInput: (e) => { f.note = e.target.value; }, onChange: aggiorna }))
     ));

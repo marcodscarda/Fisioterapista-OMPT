@@ -357,6 +357,68 @@ await step('stampa cartella clinica', async () => {
   }
 });
 
+await step('importazione da CSV: riconoscimento, anteprima e scrittura', async () => {
+  // File di prova nel formato dell'export di Zoho Invoice.
+  const { writeFileSync, mkdtempSync } = await import('node:fs');
+  const { join } = await import('node:path');
+  const { tmpdir } = await import('node:os');
+  const cartella = mkdtempSync(join(tmpdir(), 'ompt-import-'));
+  const percorso = join(cartella, 'Invoice.csv');
+  writeFileSync(percorso, [
+    '"Invoice Date","Invoice Number","Invoice Status","Customer Name","Item Desc","Quantity","Item Price","Total"',
+    '"15/01/2026","INV-000900","Paid","Bianchi Carla","Valutazione fisioterapica","1","70,00","222,00"',
+    '"15/01/2026","INV-000900","Paid","Bianchi Carla","Seduta di terapia manuale","3","50,00","222,00"',
+    '"03/02/2026","INV-000901","Sent","Bianchi Carla","Seduta di terapia manuale","2","50,00","100,00"'
+  ].join('\r\n'), 'utf8');
+
+  await page.goto(BASE + '#/importa', { waitUntil: 'networkidle' });
+  await page.waitForSelector('button:has-text("Apri un file CSV")');
+  const [chooser] = await Promise.all([
+    page.waitForEvent('filechooser'),
+    page.click('button:has-text("Apri un file CSV")')
+  ]);
+  await chooser.setFiles(percorso);
+  await page.waitForSelector('.card:has-text("Controlla il risultato")', { timeout: 5000 });
+
+  // Il tracciato dev'essere riconosciuto da solo.
+  const tipo = await page.locator('.field:has(label:text-is("Tipo di file")) select').inputValue();
+  if (tipo !== 'fatture') throw new Error('tracciato non riconosciuto: ' + tipo);
+
+  // Due righe con lo stesso numero devono diventare un solo documento con due voci.
+  const testo = await page.textContent('.card:has-text("Controlla il risultato")');
+  if (!/2 elementi/.test(testo)) throw new Error('attesi 2 documenti: ' + testo.replace(/\s+/g, ' ').slice(0, 160));
+  if (!/INV-000900/.test(testo)) throw new Error('numero di origine non mostrato');
+
+  await page.click('button:has-text("Importa 2 elementi")');
+  await page.waitForSelector('.modal');
+  await page.click('.modal-foot button:has-text("Importa")');
+  await page.waitForSelector('.card:has-text("Esito")', { timeout: 5000 });
+
+  const scritte = await page.evaluate(async () => {
+    const db = await import('/app/js/db.js');
+    const { calcolaTotali, numeroCompleto } = await import('/app/js/fatture.js');
+    const imp = await db.getImpostazioni();
+    const f = (await db.all('fatture')).filter(x => x.numeroTesto?.startsWith('INV-0009'));
+    return f.map(x => ({
+      n: numeroCompleto(x),
+      voci: x.righe.length,
+      totale: calcolaTotali(x, imp).nettoAPagare
+    })).sort((a, b) => a.n.localeCompare(b.n));
+  });
+  if (scritte.length !== 2) throw new Error('documenti scritti: ' + JSON.stringify(scritte));
+  if (scritte[0].voci !== 2) throw new Error('voci non raggruppate: ' + JSON.stringify(scritte[0]));
+  // Il totale di origine va conservato: 222 con bollo, 100 senza.
+  if (scritte[0].totale !== 222) throw new Error('totale con bollo non conservato: ' + scritte[0].totale);
+  if (scritte[1].totale !== 100) throw new Error('totale senza bollo non conservato: ' + scritte[1].totale);
+
+  // Il progressivo del gestionale non dev'essere toccato dall'archivio storico.
+  const prossimo = await page.evaluate(async () => {
+    const db = await import('/app/js/db.js');
+    return db.anteprimaNumeroFattura(2026);
+  });
+  if (prossimo !== 8) throw new Error('il progressivo è stato alterato dall’import: ' + prossimo);
+});
+
 await step('responsive a 400px', async () => {
   await page.setViewportSize({ width: 400, height: 800 });
   await page.goto(BASE + '#/incassi', { waitUntil: 'networkidle' });

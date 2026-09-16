@@ -206,6 +206,13 @@ export async function vistaImpostazioni(root, { tab = 'studio' } = {}) {
           '“Unendo” aggiorna i record con lo stesso identificativo e aggiunge i nuovi. “Sostituendo” svuota gli archivi prima di importare.')),
 
       h('div', { class: 'card' },
+        h('div', { class: 'card-head' }, h('h2', 'Importazione da un altro gestionale')),
+        h('p', { class: 'small' },
+          'Se hai già fatturato con Zoho Invoice o con un altro programma, puoi portare qui anagrafiche, ' +
+          'fatture e incassi partendo dagli export in CSV.'),
+        h('a', { class: 'btn btn-primary', href: '#/importa' }, '⬆ Importa dati')),
+
+      h('div', { class: 'card' },
         h('div', { class: 'card-head' }, h('h2', 'Azzeramento')),
         h('p', { class: 'small' }, 'Elimina definitivamente tutti i dati dal browser. Esegui prima un backup.'),
         h('button', { class: 'btn btn-danger', onClick: () => azzera() }, '🗑 Cancella tutti i dati')));

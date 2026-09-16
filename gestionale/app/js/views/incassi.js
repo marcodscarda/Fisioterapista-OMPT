@@ -7,7 +7,7 @@ import {
 import { modal, conferma, tabella, badge, barChart, vuoto } from '../ui/kit.js';
 import * as db from '../db.js';
 import * as S from '../state.js';
-import { calcolaTotali, statoFattura, numeroCompleto, METODI_PAGAMENTO } from '../fatture.js';
+import { calcolaTotali, statoFattura, numeroCompleto, emessa as fatturaEmessa, METODI_PAGAMENTO } from '../fatture.js';
 
 /* ------------------------------------------------------------------ */
 /* Registrazione di un incasso                                         */
@@ -85,10 +85,10 @@ export async function vistaIncassi(root) {
     const totale = round2(delPeriodo.reduce((s, i) => s + num(i.importo), 0));
 
     // Fatturato dell'anno e crediti aperti
-    const fatturePeriodo = fatture.filter(f => f.numero && !f.annullata && (f.anno || yearOf(f.data)) === anno);
+    const fatturePeriodo = fatture.filter(f => fatturaEmessa(f) && !f.annullata && (f.anno || yearOf(f.data)) === anno);
     const fatturato = round2(fatturePeriodo.reduce((s, f) => s + calcolaTotali(f, imp).nettoAPagare, 0));
     const aperte = fatture
-      .filter(f => f.numero && !f.annullata)
+      .filter(f => fatturaEmessa(f) && !f.annullata)
       .map(f => ({ f, st: statoFattura(f, perFattura.get(f.id) || [], calcolaTotali(f, imp)) }))
       .filter(r => r.st.residuo > 0.009)
       .sort((a, b) => (a.f.scadenza || a.f.data || '').localeCompare(b.f.scadenza || b.f.data || ''));

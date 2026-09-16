@@ -12,6 +12,7 @@ import { vistaFatture, vistaFattura } from './views/fatture.js';
 import { vistaIncassi } from './views/incassi.js';
 import { vistaAgenda } from './views/agenda.js';
 import { vistaImpostazioni } from './views/impostazioni.js';
+import { vistaImporta } from './views/importa.js';
 
 const vista = () => document.getElementById('view');
 
@@ -30,6 +31,7 @@ S.rotta('/fattura/nuova/:pazienteId', async ({ params }) => {
 });
 S.rotta('/fattura/:id', async ({ params }) => { briciole('Fatture', 'Documento'); await vistaFattura(vista(), params); });
 S.rotta('/incassi', async () => { briciole('Incassi'); await vistaIncassi(vista()); });
+S.rotta('/importa', async () => { briciole('Impostazioni', 'Importa dati'); await vistaImporta(vista()); });
 S.rotta('/impostazioni', async () => { briciole('Impostazioni'); await vistaImpostazioni(vista(), {}); });
 S.rotta('/impostazioni/:tab', async ({ params }) => { briciole('Impostazioni'); await vistaImpostazioni(vista(), params); });
 
@@ -67,7 +69,7 @@ async function render(match, path) {
 
 function attivaNav(path) {
   const radice = '/' + (path.split('/')[1] || '');
-  const alias = { '/paziente': '/pazienti', '/cartella': '/pazienti', '/fattura': '/fatture' };
+  const alias = { '/paziente': '/pazienti', '/cartella': '/pazienti', '/fattura': '/fatture', '/importa': '/impostazioni' };
   const attivo = alias[radice] || radice;
   qsa('#nav a').forEach(a => a.classList.toggle('active', a.dataset.nav === attivo));
 }

@@ -67,7 +67,12 @@ export function calcolaTotali(fattura, imp) {
   // Imposta di bollo: dovuta sui documenti esenti o non soggetti a IVA oltre la soglia
   const soglia = num(imp?.bolloSoglia, 77.47);
   const importoBollo = num(imp?.bolloImporto, 2);
-  const bolloDovuto = esente && round2(imponibile + rivalsa) > soglia;
+  // Di norma il bollo segue la soglia di legge. Un documento puo' pero' forzarlo:
+  // serve per i documenti importati, che devono conservare il totale con cui sono
+  // stati realmente emessi, e per il bollo assolto in modo virtuale.
+  const bolloDovuto = fattura?.bolloForzato === false ? false
+    : fattura?.bolloForzato === true ? true
+      : esente && round2(imponibile + rivalsa) > soglia;
   const bolloAddebitato = fattura?.bolloAddebitato ?? imp?.bolloAddebitato ?? true;
   const bollo = bolloDovuto ? importoBollo : 0;
   const bolloInTotale = bolloDovuto && bolloAddebitato ? importoBollo : 0;
@@ -88,13 +93,24 @@ export function calcolaTotali(fattura, imp) {
     esente, aliquotaIva, iva,
     rivalsaAttiva, rivalsaPerc, rivalsa,
     bolloDovuto, bolloAddebitato, bollo, bolloInTotale, soglia,
+    bolloForzato: fattura?.bolloForzato ?? null,
     ritenutaAttiva, ritenutaPerc, baseRitenuta, ritenuta,
     totaleDocumento, nettoAPagare, forfettario
   };
 }
 
-/** Numero completo nel formato "7/2026". */
-export const numeroCompleto = (f) => f?.numero ? `${f.numero}/${f.anno || yearOf(f.data)}` : '(bozza)';
+/**
+ * Numero completo nel formato "7/2026".
+ * I documenti importati da un altro gestionale conservano il numero di origine
+ * (per esempio "INV-000123"), che non e' necessariamente un intero.
+ */
+export const numeroCompleto = (f) =>
+  f?.numeroTesto ? f.numeroTesto
+    : f?.numero ? `${f.numero}/${f.anno || yearOf(f.data)}`
+      : '(bozza)';
+
+/** Il documento e' stato emesso, cioe' ha un numero definitivo? */
+export const emessa = (f) => !!(f?.numero || f?.numeroTesto);
 
 /** Totale incassato per una fattura. */
 export const totaleIncassato = (incassi) => round2((incassi || []).reduce((s, i) => s + num(i.importo, 0), 0));

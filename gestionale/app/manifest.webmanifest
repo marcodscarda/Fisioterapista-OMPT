@@ -1,0 +1,17 @@
+{
+  "name": "Gestionale OMPT",
+  "short_name": "OMPT",
+  "description": "Cartella clinica, agenda, fatture e incassi dello studio.",
+  "start_url": "../",
+  "scope": "../",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f4f6f8",
+  "theme_color": "#0f6f6a",
+  "icons": [
+    { "src": "icone/icona.svg", "type": "image/svg+xml", "sizes": "any", "purpose": "any" },
+    { "src": "icone/icona-192.png", "type": "image/png", "sizes": "192x192", "purpose": "any" },
+    { "src": "icone/icona-512.png", "type": "image/png", "sizes": "512x512", "purpose": "any" },
+    { "src": "icone/icona-512.png", "type": "image/png", "sizes": "512x512", "purpose": "maskable" }
+  ]
+}

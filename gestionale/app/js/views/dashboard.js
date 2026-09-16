@@ -7,7 +7,7 @@ import {
 import { tabella, badge, vuoto } from '../ui/kit.js';
 import * as db from '../db.js';
 import * as S from '../state.js';
-import { calcolaTotali, statoFattura, numeroCompleto } from '../fatture.js';
+import { calcolaTotali, statoFattura, numeroCompleto, emessa as fatturaEmessa } from '../fatture.js';
 
 export async function vistaDashboard(root) {
   const [pazienti, episodi, sedute, fatture, incassi, appuntamenti, imp] = await Promise.all([
@@ -30,7 +30,7 @@ export async function vistaDashboard(root) {
   const episodiAperti = episodi.filter(e => !e.chiuso);
 
   const crediti = fatture
-    .filter(f => f.numero && !f.annullata)
+    .filter(f => fatturaEmessa(f) && !f.annullata)
     .map(f => ({ f, st: statoFattura(f, perFattura.get(f.id) || [], calcolaTotali(f, imp)) }))
     .filter(r => r.st.residuo > 0.009)
     .sort((a, b) => (a.f.scadenza || a.f.data || '').localeCompare(b.f.scadenza || b.f.data || ''));
