@@ -21,7 +21,8 @@ const ROOT = resolve(fileURLToPath(new URL('.', import.meta.url)));
 const argomenti = process.argv.slice(2);
 const APRI_BROWSER = !argomenti.includes('--no-open');
 const PORTA_INIZIALE = Number(argomenti.find(a => /^\d+$/.test(a)) || process.env.PORT || 4321);
-const MAX_TENTATIVI = 12;
+// Quante porte provare in successione se quella scelta e' gia' occupata.
+const MAX_PORTE_PROVATE = 12;
 
 /* Accesso dalla rete locale: va chiesto esplicitamente, perche' espone il
    gestionale agli altri dispositivi collegati alla stessa rete. */
@@ -37,13 +38,16 @@ function generaCodice(n) {
   return Array.from(b, x => ALFABETO[x % ALFABETO.length]).join('');
 }
 
-/* Difesa elementare contro i tentativi a forza bruta sul codice. */
+/* Difesa elementare contro i tentativi a forza bruta sul codice:
+   dieci codici sbagliati bloccano l'indirizzo per dieci minuti. */
+const MAX_CODICI_SBAGLIATI = 10;
+const FINESTRA_BLOCCO = 10 * 60_000;
 const tentativi = new Map();
 function troppiTentativi(ip) {
   const t = tentativi.get(ip);
   if (!t) return false;
-  if (Date.now() - t.ultimo > 10 * 60_000) { tentativi.delete(ip); return false; }
-  return t.conteggio >= 10;
+  if (Date.now() - t.ultimo > FINESTRA_BLOCCO) { tentativi.delete(ip); return false; }
+  return t.conteggio >= MAX_CODICI_SBAGLIATI;
 }
 function segnaFallimento(ip) {
   const t = tentativi.get(ip) || { conteggio: 0, ultimo: 0 };
@@ -207,7 +211,7 @@ server.on('listening', () => {
 /** Se la porta e' occupata prova con la successiva: evita di dover chiudere altre finestre. */
 function avvia(porta, tentativo = 0) {
   server.once('error', (err) => {
-    if (err.code === 'EADDRINUSE' && tentativo < MAX_TENTATIVI) {
+    if (err.code === 'EADDRINUSE' && tentativo < MAX_PORTE_PROVATE) {
       avvia(porta + 1, tentativo + 1);
       return;
     }
