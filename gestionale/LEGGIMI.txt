@@ -15,18 +15,40 @@ GESTIONALE OMPT — COME SI APRE
    Per chiudere tutto, chiudi la finestra.
 
 
-3) PER FARE PRIMA LE VOLTE SUCCESSIVE (una volta sola)
+3) L'ICONA SULLA SCRIVANIA
 
-   Fai doppio clic su:
-       Crea icona sul desktop.command     se hai un Mac
-       Crea icona sul desktop.bat         se hai Windows
+   SU MAC non devi fare niente: al primo avvio, nella finestra nera,
+   compare la domanda
 
-   Sulla Scrivania compare l'icona "Gestionale OMPT". Da li' in poi
-   basta un doppio clic su quella: su Mac si apre direttamente, senza
-   nessuna finestra nera. Per chiuderlo: selezionalo e premi Cmd+Q.
+       Vuoi l'icona "Gestionale OMPT" sulla Scrivania?
+
+   Premi  s  e l'icona compare. Te lo chiede una volta sola.
+
+   SU WINDOWS fai doppio clic su "Crea icona sul desktop.bat".
+
+   Da li' in poi basta un doppio clic sull'icona: su Mac si apre
+   direttamente, senza nessuna finestra nera. Per chiuderlo:
+   selezionalo e premi Cmd+Q.
 
    L'icona punta sempre a questa cartella, quindi resta valida anche
-   dopo gli aggiornamenti. Va rifatta solo se sposti la cartella.
+   dopo gli aggiornamenti. Va rifatta solo se sposti la cartella:
+   in quel caso usa "Crea icona sul desktop.command".
+
+
+SE IL MAC BLOCCA ANCHE "Crea icona sul desktop.command"
+-------------------------------------------------------
+Stesso blocco di prima, su un file diverso. Clicca ANNULLA.
+
+Non ti serve quel file: avvia il gestionale con
+"Avvia gestionale.command" e rispondi  s  alla domanda.
+
+Se invece vuoi togliere il blocco a tutta la cartella in un colpo
+solo: apri il Terminale, scrivi
+
+    xattr -d -r com.apple.quarantine
+
+con uno SPAZIO finale, poi trascina dentro la finestra la cartella
+"gestionale" e premi Invio.
 
 
 SE IL MAC DICE CHE NON PUO' APRIRLO

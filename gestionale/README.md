@@ -40,18 +40,28 @@ Se il browser non si apre da solo, nella finestra c'è scritto l'indirizzo da co
 
 ### L'icona sulla Scrivania: il modo più rapido
 
-Per non dover ogni volta aprire la cartella e cercare il file giusto, fai **doppio clic una
-volta sola** su:
+**Su Mac non devi fare niente di speciale.** Al primo avvio, nella finestra del Terminale, il
+gestionale chiede:
 
-| Se hai… | Fai doppio clic su |
-|---|---|
-| Mac | **Crea icona sul desktop.command** |
-| Windows | **Crea icona sul desktop.bat** |
+```
+  Vuoi l'icona "Gestionale OMPT" sulla Scrivania?
+  Premi s per sì, qualsiasi altro tasto per no:
+```
 
-Sulla Scrivania compare l'icona **Gestionale OMPT** con lo stetoscopio. Da lì in poi il
-gestionale si apre con un doppio clic su quella, e su Mac **senza nessuna finestra nera del
-Terminale**: parte e basta. Per chiuderlo, selezionalo e premi Cmd+Q (su Windows chiudi la
-finestra).
+Premi **s** e l'icona compare. La domanda arriva una volta sola.
+
+> Perché la domanda sta lì e non in un file a parte: per arrivare ad avviare il gestionale hai
+> già sbloccato *Avvia gestionale.command*, mentre qualsiasi **altro** file scaricato verrebbe
+> bloccato di nuovo da macOS. Chiedendolo da lì, l'ostacolo non si ripresenta.
+
+Su **Windows** fai doppio clic su **Crea icona sul desktop.bat**.
+
+Se più avanti vuoi rifare l'icona — per esempio dopo aver spostato la cartella — c'è anche
+**Crea icona sul desktop.command** (Mac), che fa la stessa cosa.
+
+Da lì in poi il gestionale si apre con un doppio clic sull'icona, e su Mac **senza nessuna
+finestra nera del Terminale**: parte e basta. Per chiuderlo, selezionalo e premi Cmd+Q (su
+Windows chiudi la finestra).
 
 L'icona punta sempre a questa cartella, quindi usa sempre la versione aggiornata: non va
 rifatta a ogni aggiornamento. Va rifatta **solo se sposti o rinomini la cartella**.
@@ -91,6 +101,16 @@ Da quel momento il doppio clic funziona sempre.
 > circa un'ora: rifai il doppio clic, premi *Annulla*, e torna subito in *Privacy e sicurezza*.
 
 Su macOS Monterey e precedenti basta il **clic destro** sul file → **Apri** → **Apri**.
+
+**Strada C — togli il blocco a tutta la cartella, una volta sola.** Conviene se il blocco ti
+ricompare su più file (per esempio su *Crea icona sul desktop.command*): apri *Terminale*, scrivi
+
+```
+xattr -d -r com.apple.quarantine
+```
+
+con **uno spazio finale**, poi **trascina dentro la finestra la cartella `gestionale`** e premi
+Invio. Da quel momento tutti i file di quella cartella si aprono con un doppio clic.
 
 Il blocco riguarda solo i file estratti da uno ZIP scaricato: con `git clone` macOS non li marca e
 il doppio clic funziona subito.
@@ -299,6 +319,7 @@ gestionale/
 │       ├── ui/             renderer dei form, body chart, componenti
 │       └── views/          le schermate
 ├── Crea icona sul desktop.command / .bat   crea l'icona sulla Scrivania
+├── strumenti/              script condivisi dagli avviatori
 ├── docs/                   note cliniche, fiscali e privacy
 └── test/                   test della logica pura (npm test)
 ```

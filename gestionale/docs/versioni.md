@@ -34,8 +34,11 @@ Prima versione numerata. Raccoglie tutto il lavoro fatto finora e aggiunge:
 - Tolta la riga per la firma del paziente: la fattura la firma solo chi la emette.
 
 **Apertura del gestionale**
-- Doppio clic su **Crea icona sul desktop** e l'icona compare sulla Scrivania
-  (o sul Desktop su Windows): da lì il gestionale si apre in un colpo solo.
+- Su Mac l'icona sulla Scrivania viene **proposta al primo avvio**, dentro la finestra di
+  *Avvia gestionale.command*: basta premere `s`. È l'unico file che l'utente ha già
+  sbloccato, mentre qualunque altro file scaricato verrebbe bloccato di nuovo da macOS —
+  chiedendolo da lì l'ostacolo non si ripresenta. Su Windows resta il doppio clic su
+  *Crea icona sul desktop.bat*.
 - Se il gestionale è già in funzione, un secondo avvio non ne apre una seconda copia:
   riporta semplicemente in primo piano la finestra del browser. Prima, in quel caso,
   partiva una seconda copia su un'altra porta — e siccome il browser tiene un archivio
