@@ -12,8 +12,9 @@ import * as db from '../db.js';
 import * as S from '../state.js';
 import { stampaCartella } from '../print.js';
 import { vistaRagionamento } from './ragionamento.js';
+import { vistaAnteprima } from './anteprima.js';
 
-export async function vistaCartella(root, { id, tab = 'soggettivo' }) {
+export async function vistaCartella(root, { id, tab = 'anteprima' }) {
   const ep = await db.byId('episodi', id);
   if (!ep) { clear(root).appendChild(h('div', { class: 'alert danger' }, 'Episodio non trovato.')); return; }
   const paz = await S.paziente(ep.pazienteId);
@@ -68,7 +69,9 @@ export async function vistaCartella(root, { id, tab = 'soggettivo' }) {
     bannerAllerte(ep));
 
   const parti = CARTELLA.map(p => ({ key: p.key, label: p.label, badge: compilati(ep, p) }));
-  const barra = tabs([...parti,
+  const barra = tabs([
+  { key: 'anteprima', label: '◉ Anteprima' },
+  ...parti,
   { key: 'sedute', label: 'Sedute', badge: sedute.length },
   { key: 'proms', label: 'Questionari', badge: ep.proms.length },
   { key: 'supporto', label: '◈ Supporto' }],
@@ -78,7 +81,9 @@ export async function vistaCartella(root, { id, tab = 'soggettivo' }) {
   add(clear(root), testa, barra, corpo);
 
   const parte = CARTELLA.find(p => p.key === tab);
-  if (parte) {
+  if (tab === 'anteprima') {
+    vistaAnteprima(corpo, ep, paz, sedute);
+  } else if (parte) {
     if (!ep.cartella[parte.key]) ep.cartella[parte.key] = {};
     add(corpo, 
       h('div', { class: 'btn-row', style: { marginBottom: '10px' } },

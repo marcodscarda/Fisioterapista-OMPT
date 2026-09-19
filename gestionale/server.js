@@ -18,6 +18,14 @@ import { extname, join, normalize, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(fileURLToPath(new URL('.', import.meta.url)));
+
+/* Versione dichiarata in package.json. Per uso interno resta nella forma
+   semver completa; all'utente si mostra la coppia "maiuscola.minore", la
+   stessa che compare nella barra laterale (app/js/versione.js). */
+const VERSIONE = JSON.parse(
+  await readFile(join(ROOT, 'package.json'), 'utf8')
+).version || '0.0.0';
+const VERSIONE_BREVE = VERSIONE.split('.').slice(0, 2).join('.');
 const argomenti = process.argv.slice(2);
 const APRI_BROWSER = !argomenti.includes('--no-open');
 const PORTA_INIZIALE = Number(argomenti.find(a => /^\d+$/.test(a)) || process.env.PORT || 4321);
@@ -119,6 +127,14 @@ const server = createServer(async (req, res) => {
       }
     }
 
+    // Firma dell'applicazione: serve a un secondo avvio per capire che la
+    // porta e' occupata dal gestionale stesso e non da un altro programma.
+    if (url.pathname === '/__gestionale') {
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' })
+        .end(JSON.stringify({ app: 'gestionale-ompt', versione: VERSIONE }));
+      return;
+    }
+
     let pathname = decodeURIComponent(url.pathname);
     if (pathname.endsWith('/')) pathname += 'index.html';
     const filePath = join(ROOT, normalize(pathname).replace(/^(\.\.[/\\])+/, ''));
@@ -189,7 +205,7 @@ server.on('listening', () => {
   const porta = server.address().port;
   const indirizzo = `http://127.0.0.1:${porta}/`;
   console.log('\n  ┌─────────────────────────────────────────────┐');
-  console.log('  │  Gestionale OMPT avviato                    │');
+  console.log('  │' + `  Gestionale OMPT ${VERSIONE_BREVE} avviato`.padEnd(45) + '│');
   console.log('  └─────────────────────────────────────────────┘\n');
   console.log(`  Indirizzo:  ${indirizzo}\n`);
   if (porta !== PORTA_INIZIALE) console.log(`  (la porta ${PORTA_INIZIALE} era gia' occupata)\n`);
@@ -208,8 +224,39 @@ server.on('listening', () => {
   if (APRI_BROWSER) apriBrowser(indirizzo);
 });
 
-/** Se la porta e' occupata prova con la successiva: evita di dover chiudere altre finestre. */
-function avvia(porta, tentativo = 0) {
+/**
+ * La porta e' occupata dal gestionale stesso?
+ * Distinguere i due casi e' importante: ogni porta e' un'origine diversa per
+ * il browser, quindi far ripartire una seconda copia su un'altra porta
+ * aprirebbe un archivio vuoto, con l'aria di aver perso tutti i dati.
+ */
+async function gestionaleGiaAvviato(porta) {
+  try {
+    const risposta = await fetch(`http://127.0.0.1:${porta}/__gestionale`, {
+      signal: AbortSignal.timeout(1500)
+    });
+    if (!risposta.ok) return false;
+    const dati = await risposta.json();
+    return dati?.app === 'gestionale-ompt';
+  } catch {
+    return false;   // porta occupata da qualcos'altro, o nessuna risposta utile
+  }
+}
+
+/**
+ * Avvio. Se il gestionale e' gia' in funzione si apre semplicemente la finestra
+ * del browser su quello: il secondo doppio clic diventa immediato.
+ * Se invece la porta e' di un altro programma si prova la successiva.
+ */
+async function avvia(porta, tentativo = 0) {
+  if (await gestionaleGiaAvviato(porta)) {
+    const indirizzo = `http://127.0.0.1:${porta}/`;
+    console.log('\n  Il gestionale era gia\' avviato: apro la finestra su ' + indirizzo + '\n');
+    if (APRI_BROWSER) apriBrowser(indirizzo);
+    // Un istante per lasciar partire il browser prima di chiudere il processo.
+    setTimeout(() => process.exit(0), 800);
+    return;
+  }
   server.once('error', (err) => {
     if (err.code === 'EADDRINUSE' && tentativo < MAX_PORTE_PROVATE) {
       avvia(porta + 1, tentativo + 1);

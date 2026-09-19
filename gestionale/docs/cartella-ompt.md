@@ -55,6 +55,20 @@ Un punteggio isolato dice poco. Conta la **variazione** rispetto alla differenza
 clinicamente importante: il gestionale confronta prima e ultima compilazione e segnala se l'MCID è
 superato. I valori di riferimento sono indicati nella scheda di ciascun questionario.
 
+### Equilibrio e disturbi vestibolari
+Parte a sé, accanto all'esame fisico, per vertigini, capogiri, instabilità e cadute: si compila
+solo quando serve. L'inquadramento parte da timing e trigger, non da come il paziente descrive il
+sintomo, e i segnali di allarme confluiscono nel riquadro di allerta come le bandiere rosse.
+Sezioni, questionari e riferimenti in [`equilibrio-vestibolare.md`](equilibrio-vestibolare.md).
+
+### Anteprima
+Quando si richiama una cartella la prima scheda che si apre è l'**anteprima**: la stessa cartella
+in sola lettura, con solo i campi compilati, la sintesi del caso in cima, gli asterischi,
+l'andamento dei questionari e le ultime cinque sedute. Serve a ripassare il paziente in un minuto
+prima di riceverlo, senza aprire una per una le sezioni del modulo. Da ogni blocco si passa alla
+compilazione con *Apri e modifica*. La stessa anteprima si apre dall'elenco degli episodi nella
+scheda del paziente, senza entrare nella cartella.
+
 ### Consenso
 Il consenso informato è documentato nel piano. Per le tecniche manipolative ad alta velocità e
 bassa ampiezza è raccomandato un consenso **scritto e specifico**: se il piano prevede

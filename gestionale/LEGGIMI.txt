@@ -15,6 +15,20 @@ GESTIONALE OMPT — COME SI APRE
    Per chiudere tutto, chiudi la finestra.
 
 
+3) PER FARE PRIMA LE VOLTE SUCCESSIVE (una volta sola)
+
+   Fai doppio clic su:
+       Crea icona sul desktop.command     se hai un Mac
+       Crea icona sul desktop.bat         se hai Windows
+
+   Sulla Scrivania compare l'icona "Gestionale OMPT". Da li' in poi
+   basta un doppio clic su quella: su Mac si apre direttamente, senza
+   nessuna finestra nera. Per chiuderlo: selezionalo e premi Cmd+Q.
+
+   L'icona punta sempre a questa cartella, quindi resta valida anche
+   dopo gli aggiornamenti. Va rifatta solo se sposti la cartella.
+
+
 SE IL MAC DICE CHE NON PUO' APRIRLO
 -----------------------------------
 Compare un avviso con i pulsanti "Sposta nel Cestino" e "Annulla".

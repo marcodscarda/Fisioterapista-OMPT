@@ -20,8 +20,22 @@
 <div id="app" class="app">
   <aside class="sidebar" id="sidebar">
     <div class="brand">
-      <span class="brand-mark">OMPT</span>
+      <span class="brand-row">
+        <!-- Stesso segno dell'icona dell'applicazione: stetoscopio stilizzato. -->
+        <svg class="brand-ico" viewBox="0 0 512 512" aria-hidden="true" focusable="false">
+          <rect width="512" height="512" rx="112" fill="currentColor"/>
+          <g fill="none" stroke="#fff" stroke-width="30" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M168 110v78a88 88 0 0 0 176 0v-78"/>
+            <path d="M140 110h56M316 110h56"/>
+            <path d="M256 276v52a76 76 0 0 0 76 76h8"/>
+          </g>
+          <circle cx="356" cy="404" r="46" fill="#fff"/>
+          <circle cx="356" cy="404" r="21" fill="currentColor"/>
+        </svg>
+        <span class="brand-mark">OMPT</span>
+      </span>
       <span class="brand-sub" id="brandStudio">Gestionale</span>
+      <span class="brand-ver" id="brandVersione"></span>
     </div>
     <nav class="nav" id="nav">
       <a href="#/" data-nav="/"><span class="nav-ico">▤</span> Home</a>

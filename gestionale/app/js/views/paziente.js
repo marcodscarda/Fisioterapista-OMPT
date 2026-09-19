@@ -8,6 +8,7 @@ import * as S from '../state.js';
 import { nuovoPaziente, eliminaPaziente } from './pazienti.js';
 import { stampaModulo, MODULI, stampaCartella } from '../print.js';
 import { calcolaTotali, statoFattura, numeroCompleto } from '../fatture.js';
+import { riepilogoCartella } from './anteprima.js';
 
 export async function vistaPaziente(root, { id, tab = 'episodi' }) {
   const p = await S.paziente(id);
@@ -106,12 +107,35 @@ function renderEpisodi(root, p, episodi, sedute) {
         { label: 'Apertura', cell: (e) => h('span', { class: 'small' }, fmtDate(e.dataApertura)) },
         { label: 'Sedute', cell: (e) => h('span', { class: 'small' }, String(perEpisodio.get(e.id) || 0)) },
         { label: 'Stato', cell: (e) => e.chiuso ? badge('chiuso il ' + fmtDate(e.dataChiusura)) : badge('in corso', 'accent') },
-        { label: '', cell: () => h('span', { class: 'btn btn-sm' }, 'Apri cartella →') }
+        {
+          label: '', cell: (e) => h('span', { class: 'btn-row' },
+            // Anteprima senza uscire dall'elenco: per ricordarsi di che caso si tratta.
+            h('button', {
+              class: 'btn btn-sm',
+              title: 'Rivedi quanto è già stato scritto, senza aprire la cartella',
+              onClick: (ev) => { ev.stopPropagation(); anteprimaEpisodio(e, p, sedute); }
+            }, '◉ Anteprima'),
+            h('span', { class: 'btn btn-sm' }, 'Apri cartella →'))
+        }
       ],
       righe: episodi,
       onRowClick: (e) => S.vai(`/cartella/${e.id}`),
       vuotoTesto: 'Nessun episodio di cura. Creane uno per iniziare la valutazione.'
     })));
+}
+
+/** Riepilogo di sola lettura di un episodio, richiamabile dall'elenco. */
+function anteprimaEpisodio(ep, paz, tutteLeSedute) {
+  const sedute = (tutteLeSedute || []).filter(s => s.episodioId === ep.id);
+  modal({
+    title: 'Anteprima della cartella',
+    size: 'lg',
+    body: riepilogoCartella(ep, { paz, sedute }),
+    actions: [
+      { label: 'Chiudi' },
+      { label: 'Apri la cartella', class: 'btn-primary', onClick: () => S.vai('/cartella/' + ep.id) }
+    ]
+  });
 }
 
 async function creaEpisodio(p) {

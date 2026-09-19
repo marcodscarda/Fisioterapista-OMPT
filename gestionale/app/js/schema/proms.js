@@ -318,6 +318,93 @@ export const PROMS = {
     }
   },
 
+  dhi: {
+    id: 'dhi',
+    nome: 'DHI — Dizziness Handicap Inventory',
+    breve: 'DHI',
+    descrizione: 'Impatto di vertigini e instabilità sulla vita quotidiana: 25 item su dimensione fisica, funzionale ed emotiva.',
+    scala: '0–100',
+    direzione: 'basso-meglio',
+    max: 100,
+    mcid: 18,
+    mcidNota: 'Variazione clinicamente rilevante ≈ 18 punti. 0–30 handicap lieve, 31–60 moderato, 61–100 severo. Un punteggio oltre 60 è associato a maggior rischio di caduta. Le tre sottoscale (fisica, funzionale, emotiva) non vengono calcolate qui: per l’uso clinico corrente è sufficiente il totale.',
+    itemOpts: ['0', '2', '4'],
+    itemHint: '0 = no · 2 = a volte · 4 = sì',
+    items: items([
+      'Guardare in alto peggiora il disturbo',
+      'Il disturbo genera frustrazione',
+      'Limita i viaggi di lavoro o di piacere',
+      'Camminare nel corridoio di un supermercato peggiora il disturbo',
+      'Difficoltà a coricarsi o ad alzarsi dal letto',
+      'Rinuncia a uscite, cene, cinema, feste o ballo',
+      'Difficoltà a leggere',
+      'Attività impegnative (sport, ballo, lavori domestici) peggiorano il disturbo',
+      'Timore di uscire di casa senza accompagnamento',
+      'Imbarazzo davanti agli altri a causa del disturbo',
+      'Movimenti rapidi del capo peggiorano il disturbo',
+      'Evita le altezze',
+      'Girarsi nel letto peggiora il disturbo',
+      'Difficoltà nei lavori domestici o di giardinaggio impegnativi',
+      'Timore che gli altri lo credano ubriaco',
+      'Difficoltà a camminare da solo',
+      'Camminare sul marciapiede peggiora il disturbo',
+      'Difficoltà a concentrarsi',
+      'Difficoltà a camminare in casa al buio',
+      'Timore di restare a casa da solo',
+      'Si sente in condizione di disabilità',
+      'Il disturbo ha messo alla prova i rapporti con familiari e amici',
+      'Umore depresso a causa del disturbo',
+      'Il disturbo interferisce con il lavoro e le responsabilità domestiche',
+      'Chinarsi peggiora il disturbo'
+    ]),
+    calcola(v) {
+      const { tot, compilati } = somma(v, 25);
+      if (compilati < 20) return null;
+      const punteggio = round2((tot / (compilati * 4)) * 100);
+      const lab = punteggio <= 30 ? 'handicap lieve' : punteggio <= 60 ? 'handicap moderato' : 'handicap severo';
+      return { punteggio, etichetta: `${punteggio}/100 — ${lab}`, grezzo: `${tot} su ${compilati} item` };
+    }
+  },
+
+  abc: {
+    id: 'abc',
+    nome: 'ABC — Activities-specific Balance Confidence Scale',
+    breve: 'ABC',
+    descrizione: 'Fiducia nel proprio equilibrio in 16 attività quotidiane, da 0% (nessuna fiducia) a 100% (piena fiducia).',
+    scala: '0–100%',
+    direzione: 'alto-meglio',
+    max: 100,
+    mcid: 13,
+    mcidNota: 'Differenza minima rilevabile ≈ 13 punti percentuali. Sotto 50% funzionamento basso, 50–80% moderato, sopra 80% alto; un punteggio sotto il 67% è stato associato a maggior rischio di caduta.',
+    itemOpts: ['0', '10', '20', '30', '40', '50', '60', '70', '80', '90', '100'],
+    itemHint: 'Quanto si sente sicuro di non perdere l’equilibrio: 0 = per niente · 100 = del tutto',
+    items: items([
+      'Camminare in casa',
+      'Salire o scendere le scale',
+      'Chinarsi a raccogliere una pantofola dal pavimento',
+      'Prendere un oggetto da uno scaffale all’altezza degli occhi',
+      'Alzarsi sulle punte per prendere qualcosa sopra la testa',
+      'Salire su una sedia per prendere qualcosa',
+      'Spazzare il pavimento',
+      'Uscire di casa e raggiungere un’auto parcheggiata nel vialetto',
+      'Salire o scendere dall’auto',
+      'Attraversare un parcheggio fino all’ingresso del negozio',
+      'Salire o scendere una rampa',
+      'Camminare in un luogo affollato',
+      'Essere urtati mentre si cammina in mezzo alla gente',
+      'Usare una scala mobile tenendosi al corrimano',
+      'Usare una scala mobile senza tenersi al corrimano',
+      'Camminare su un marciapiede ghiacciato'
+    ]),
+    calcola(v) {
+      const { tot, compilati } = somma(v, 16);
+      if (compilati < 14) return null;
+      const punteggio = round2(tot / compilati);
+      const lab = punteggio < 50 ? 'funzionamento basso' : punteggio <= 80 ? 'funzionamento moderato' : 'funzionamento alto';
+      return { punteggio, etichetta: `${punteggio}% — ${lab}`, grezzo: `${compilati}/16 item` };
+    }
+  },
+
   groc: {
     id: 'groc',
     nome: 'GROC — Global Rating of Change',
@@ -352,6 +439,7 @@ export function promSuggeriti(regione) {
   if (/spall|scapol/.test(r)) return [...base, 'spadi', 'quickdash'];
   if (/gomito|polso|mano|braccio/.test(r)) return [...base, 'quickdash'];
   if (/ginocch|caviglia|piede|gamba|coscia/.test(r)) return [...base, 'lefs'];
+  if (/vertigin|vestib|equilibri|capogir|instabil|cadut|orecchi|labirint/.test(r)) return ['dhi', 'abc', 'psfs'];
   return base;
 }
 

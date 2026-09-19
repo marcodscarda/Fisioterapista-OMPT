@@ -61,7 +61,14 @@ await step('creazione episodio', async () => {
   await page.waitForSelector('h1:has-text("Lombalgia acuta destra")', { timeout: 5000 });
 });
 
+await step('la cartella si apre sull’anteprima', async () => {
+  await page.waitForSelector('.anteprima', { timeout: 5000 });
+  if (!/Sola lettura/.test(await page.textContent('#view'))) throw new Error('anteprima non mostrata all’apertura');
+});
+
 await step('compilazione esame soggettivo', async () => {
+  // Dall'anteprima si passa alla scheda di compilazione.
+  await page.click('.tabs button:has-text("Esame soggettivo")');
   await page.click('details.sec:has-text("Body chart") > summary');
   await page.waitForSelector('.bodychart svg');
   const box = await page.locator('.bodychart-canvas svg').first().boundingBox();
@@ -78,7 +85,10 @@ await step('selezione multipla a pastiglie (accumula, non sostituisce)', async (
   // disegno, quindi le pastiglie non si evidenziavano e ogni clic sostituiva
   // la scelta precedente invece di aggiungersi.
   await page.click('.tabs button:has-text("Esame soggettivo")').catch(() => {});
-  await page.click('details.sec:has-text("Body chart") > summary').catch(() => {});
+  // Aprire la sezione solo se e' chiusa: un clic incondizionato sul titolo la
+  // richiuderebbe quando il passaggio precedente l'ha gia' lasciata aperta.
+  const sezione = page.locator('details.sec:has-text("Body chart")').first();
+  if (!await sezione.evaluate(d => d.open)) await sezione.locator('> summary').click();
   const campo = page.locator('.field:has(label:text-is("Qualità del sintomo"))');
   for (const o of ['Profondo', 'Urente/bruciante', 'Trafittivo']) {
     await campo.locator(`.chip-opt:text-is("${o}")`).click();
@@ -101,6 +111,20 @@ await step('selezione multipla a pastiglie (accumula, non sostituisce)', async (
     return ep.cartella?.soggettivo?.bodychart?.tipoDolore || [];
   });
   if (salvate.length !== 2) throw new Error('in archivio attese 2 voci, trovate: ' + JSON.stringify(salvate));
+});
+
+await step('sezione vestibolare e anteprima', async () => {
+  await page.click('.tabs button:has-text("Equilibrio e vestibolo")');
+  await page.waitForSelector('details.sec:has-text("Segnali di allarme")', { timeout: 5000 });
+  await page.click('details.sec:has-text("Segnali di allarme") > summary');
+  await page.click('.chip-opt:has-text("Diplopia")');
+  await page.waitForTimeout(900);
+  await page.click('.tabs button:has-text("Anteprima")');
+  await page.waitForSelector('.anteprima .ant-voce', { timeout: 5000 });
+  const t = await page.textContent('.anteprima');
+  if (!/Equilibrio e vestibolo/.test(t)) throw new Error('la parte vestibolare non compare in anteprima');
+  if (!/Diplopia/.test(t)) throw new Error('il valore inserito non compare in anteprima');
+  if (!await page.locator('.anteprima .ant-allerta').count()) throw new Error('il campo di allerta non è evidenziato');
 });
 
 await step('bandiere rosse evidenziate', async () => {

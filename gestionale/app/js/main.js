@@ -13,6 +13,7 @@ import { vistaIncassi } from './views/incassi.js';
 import { vistaAgenda } from './views/agenda.js';
 import { vistaImpostazioni } from './views/impostazioni.js';
 import { vistaImporta } from './views/importa.js';
+import { VERSIONE } from './versione.js';
 
 const vista = () => document.getElementById('view');
 
@@ -90,6 +91,7 @@ async function avvia() {
   const imp = await S.imp();
   const nome = [imp.nome, imp.cognome].filter(Boolean).join(' ');
   document.getElementById('brandStudio').textContent = nome || 'Gestionale';
+  document.getElementById('brandVersione').textContent = 'versione ' + VERSIONE;
   if (nome) document.title = `Gestionale OMPT — ${nome}`;
 
   document.getElementById('btnMenu')?.addEventListener('click', () => {

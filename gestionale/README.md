@@ -1,5 +1,8 @@
 # Gestionale OMPT
 
+**Versione 1.0** — lo storico delle versioni è in [`docs/versioni.md`](docs/versioni.md).
+Il numero della versione in uso è sempre scritto sotto il marchio, in alto a sinistra.
+
 Gestionale per fisioterapista specializzato in terapia manuale: **cartella clinica secondo il
 ragionamento clinico OMPT/IFOMPT**, **fatturazione cartacea** per pazienti privati e **registro
 degli incassi**.
@@ -34,6 +37,27 @@ tutto, chiudi la finestra.
 
 Se il browser non si apre da solo, nella finestra c'è scritto l'indirizzo da copiare: di norma
 <http://127.0.0.1:4321>.
+
+### L'icona sulla Scrivania: il modo più rapido
+
+Per non dover ogni volta aprire la cartella e cercare il file giusto, fai **doppio clic una
+volta sola** su:
+
+| Se hai… | Fai doppio clic su |
+|---|---|
+| Mac | **Crea icona sul desktop.command** |
+| Windows | **Crea icona sul desktop.bat** |
+
+Sulla Scrivania compare l'icona **Gestionale OMPT** con lo stetoscopio. Da lì in poi il
+gestionale si apre con un doppio clic su quella, e su Mac **senza nessuna finestra nera del
+Terminale**: parte e basta. Per chiuderlo, selezionalo e premi Cmd+Q (su Windows chiudi la
+finestra).
+
+L'icona punta sempre a questa cartella, quindi usa sempre la versione aggiornata: non va
+rifatta a ogni aggiornamento. Va rifatta **solo se sposti o rinomini la cartella**.
+
+Se il gestionale è già aperto e fai di nuovo doppio clic, non parte una seconda copia: torna
+semplicemente in primo piano la finestra del browser.
 
 ### Su Mac, al primo avvio: «non può essere aperto»
 
@@ -126,6 +150,7 @@ secondo le fasi del ragionamento clinico:
 | **Esame soggettivo** | body chart interattiva, caratteristiche e comportamento dei sintomi nelle 24 h, aggravanti/allevianti, severità e irritabilità, storia attuale e passata, **domande speciali e bandiere rosse**, **screening cervicale secondo il framework IFOMPT**, bandiere gialle/blu/nere/arancioni |
 | **Ipotesi** | ipotesi principale e alternative, fonti dei sintomi, **meccanismo del dolore** (nocicettivo / neuropatico / nociplastico), fattori contribuenti, precauzioni e controindicazioni, piano dell'esame |
 | **Esame fisico** | osservazione, ROM attivo/passivo con end-feel, movimenti ripetuti, esame neurologico (dermatomeri, miotomi MRC, riflessi, segni di primo motoneurone), test neurodinamici, PAIVM/PPIVM, palpazione, test speciali, forza e performance |
+| **Equilibrio e vestibolo** | inquadramento per timing e trigger, segnali di allarme e HINTS, esame oculomotore e riflesso vestibolo-oculomotore, test posizionali e manovre liberatorie, equilibrio e rischio di caduta, contributo cervicale, programma riabilitativo |
 | **Diagnosi** | diagnosi fisioterapica, classificazione **ICF**, fattori prognostici, **asterischi (comparable signs)** |
 | **Piano** | obiettivi SMART condivisi, interventi e razionale, dosaggio e progressione, programma domiciliare, criteri di dimissione, consenso informato |
 | **Esito** | dimissione, GROC, raccomandazioni, follow-up |
@@ -139,6 +164,23 @@ Caratteristiche utili nella pratica:
 - **Asterischi** definiti una volta e **riproposti automaticamente in ogni seduta** per la rivalutazione.
 - **Diario sedute in formato SOAP**, con grafico dell'andamento NPRS.
 - **Salvataggio automatico** mentre si scrive.
+- **Anteprima**: è la prima scheda che si apre quando richiami una cartella. Mostra in sola
+  lettura tutto quello che è già stato scritto — sintesi del caso, asterischi, ogni parte
+  compilata, andamento dei questionari e ultime sedute — così ripassi il paziente senza aprire
+  una per una le sezioni. La stessa anteprima si apre dall'elenco degli episodi, con il pulsante
+  *Anteprima*, senza entrare nella cartella.
+
+### Equilibrio e disturbi vestibolari
+
+Parte dedicata, con sette sezioni che seguono l'ordine con cui il problema va affrontato:
+inquadramento per **timing e trigger** invece che per come il paziente descrive il sintomo,
+segnali di allarme e **HINTS**, esame oculomotore e del **riflesso vestibolo-oculomotore**,
+**test posizionali e manovre liberatorie** per la VPPB, misure di **equilibrio e rischio di
+caduta** con i valori di riferimento, contributo cervicale, inquadramento e programma con il
+dosaggio degli esercizi. In più i questionari **DHI** e **ABC**, proposti in automatico quando
+l'episodio riguarda vertigini o equilibrio.
+
+Riferimenti adottati e limiti: [`docs/equilibrio-vestibolare.md`](docs/equilibrio-vestibolare.md).
 
 ### Importazione da un altro gestionale
 
@@ -202,7 +244,8 @@ sanitaria. Dettagli e motivo per cui non c'è una sincronizzazione automatica:
   basta per stare in un foglio A4; se davvero non ci stanno il gestionale avvisa, invece di renderli
   illeggibili.
 - **Anteprima di stampa a schermo** e stampa in più copie (originale per il paziente + copia per lo studio),
-  con riquadro per la marca da bollo, note di legge e spazi per le firme.
+  con riquadro per la marca da bollo e note di legge. La fattura porta **la sola firma del
+  professionista**: non è un documento che il paziente sottoscrive.
 - Esportazione **CSV per il commercialista**.
 
 Dettagli e riferimenti normativi: [`docs/fatturazione.md`](docs/fatturazione.md).
@@ -255,6 +298,7 @@ gestionale/
 │       ├── schema/         schema della cartella OMPT e definizione dei PROM
 │       ├── ui/             renderer dei form, body chart, componenti
 │       └── views/          le schermate
+├── Crea icona sul desktop.command / .bat   crea l'icona sulla Scrivania
 ├── docs/                   note cliniche, fiscali e privacy
 └── test/                   test della logica pura (npm test)
 ```

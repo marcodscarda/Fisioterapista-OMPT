@@ -313,6 +313,213 @@ export const OBIETTIVO = [
 ];
 
 /* ------------------------------------------------------------------ */
+/* 3-bis. EQUILIBRIO E SISTEMA VESTIBOLARE                             */
+/* ------------------------------------------------------------------ */
+/*
+   Sezione speciale, da compilare quando il motivo del consulto e' una
+   vertigine, un capogiro, un'instabilita' o una caduta.
+
+   Riferimenti adottati:
+   - Barany Society, International Classification of Vestibular Disorders
+     (ICVD): definizione dei sintomi (ICVD-I, 2009) e criteri diagnostici
+     per VPPB (2015), malattia di Meniere (2015), emicrania vestibolare
+     (2012, revisione 2022), PPPD (2017), vestibolopatia bilaterale (2017),
+     presbivestibolopatia (2019), vestibolopatia unilaterale acuta (2022).
+   - TiTrATE (Newman-Toker): l'inquadramento parte da timing e trigger,
+     non dalla qualita' del sintomo, che il paziente descrive in modo
+     poco affidabile.
+   - HINTS / HINTS-plus (Kattah 2009) nella sindrome vestibolare acuta.
+   - Vestibular Rehabilitation for Peripheral Vestibular Hypofunction:
+     Clinical Practice Guideline, aggiornamento 2022 (APTA, Academy of
+     Neurologic Physical Therapy), per esercizio e dosaggio.
+   - AAO-HNSF Clinical Practice Guideline: Benign Paroxysmal Positional
+     Vertigo (update 2017) per test posizionali e manovre.
+*/
+export const VESTIBOLARE = [
+  {
+    id: 'vestInquadramento',
+    title: 'Inquadramento del sintomo (timing e trigger)',
+    sub: 'La classificazione parte da quando compare il sintomo e da che cosa lo scatena, non da come il paziente lo descrive: la qualità riferita («gira», «sbanda», «testa leggera») non distingue le diagnosi in modo affidabile. Terminologia secondo l’International Classification of Vestibular Disorders della Bárány Society.',
+    fields: [
+      { k: 'vestRilevante', l: 'Valutazione vestibolare pertinente al caso', t: 'radio', w: 'half', o: ['No', 'Sì'],
+        hint: 'Compila questa parte se il paziente riferisce vertigine, capogiro, instabilità, oscillopsia o cadute.' },
+      { k: 'vestTipoSintomo', l: 'Tipo di sintomo riferito', t: 'chips', w: 'full',
+        o: ['Vertigine (illusione di movimento)', 'Capogiro / testa leggera (dizziness)', 'Instabilità posturale (unsteadiness)', 'Oscillopsia', 'Vertigine visiva (ambienti complessi)', 'Sfocamento con il movimento del capo'] },
+      { k: 'vestTiming', l: 'Andamento temporale (timing)', t: 'radio', w: 'full',
+        o: ['Episodico spontaneo', 'Episodico scatenato', 'Acuto continuo (sindrome vestibolare acuta)', 'Cronico continuo', 'Progressivo'],
+        hint: 'Episodico scatenato → VPPB, ipotensione ortostatica. Episodico spontaneo → emicrania vestibolare, Ménière, TIA. Acuto continuo → neurite vestibolare o ictus: qui si applica l’HINTS.' },
+      { k: 'vestDurata', l: 'Durata del singolo episodio', t: 'sel', w: 'third',
+        o: ['—', 'Secondi', 'Meno di 1 minuto', 'Da 1 a 20 minuti', 'Da 20 minuti a 12 ore', 'Da 12 a 24 ore', 'Giorni', 'Costante'],
+        hint: 'Secondi con trigger posizionale → VPPB. Da 20 minuti a 12 ore → Ménière. Da minuti a giorni con emicrania → emicrania vestibolare.' },
+      { k: 'vestEsordio', l: 'Esordio e decorso dall’inizio', t: 'textarea', w: 'two-thirds', rows: 2,
+        hint: 'Da quanto, come è iniziato, che cosa lo ha preceduto (infezione, trauma, stress), come è cambiato.' },
+      { k: 'vestTrigger', l: 'Fattori scatenanti', t: 'chips', w: 'full',
+        o: ['Rotolarsi nel letto', 'Coricarsi o alzarsi dal letto', 'Guardare in alto (estensione del capo)', 'Flettere il capo in avanti', 'Movimenti rapidi del capo', 'Passare alla stazione eretta', 'Ambienti visivamente affollati (supermercato, folla)', 'Schermi e scorrimento', 'Camminare al buio o su fondo irregolare', 'Rumori intensi (fenomeno di Tullio)', 'Valsalva, starnuto, colpo di tosse', 'Sforzo fisico', 'Nessun fattore riconoscibile'] },
+      { k: 'vestUditivi', l: 'Sintomi uditivi associati', t: 'chips', w: 'full',
+        o: ['Ipoacusia', 'Ipoacusia fluttuante', 'Acufene', 'Ovattamento auricolare (fullness)', 'Iperacusia', 'Autofonia', 'Otorrea', 'Otalgia', 'Nessuno'],
+        hint: 'La presenza di sintomi uditivi orienta verso una causa otologica e richiede valutazione audiologica.' },
+      { k: 'vestNeuroveg', l: 'Corteo neurovegetativo ed emicranico', t: 'chips', w: 'full',
+        o: ['Nausea', 'Vomito', 'Sudorazione', 'Cefalea durante l’episodio', 'Fotofobia', 'Fonofobia', 'Aura visiva', 'Cinetosi (mal d’auto/mare)'] },
+      { k: 'vestEmicrania', l: 'Storia di emicrania (criteri ICHD-3)', t: 'radio', w: 'third', o: SI_NO_ND },
+      { k: 'vestAnsia', l: 'Ansia, attacchi di panico o ipervigilanza posturale', t: 'radio', w: 'third', o: SI_NO_ND,
+        hint: 'Elemento costitutivo del PPPD, non un giudizio sul paziente: va indagato e spiegato.' },
+      { k: 'vestCadute', l: 'Cadute negli ultimi 12 mesi (numero)', t: 'num', w: 'third',
+        hint: 'Due o più cadute, oppure una caduta con trauma, identificano un paziente ad alto rischio.' },
+      { k: 'vestPrecedenti', l: 'Anamnesi otoneurologica e generale', t: 'chips', w: 'full',
+        o: ['Trauma cranico o colpo di frusta', 'Precedenti episodi di VPPB', 'Neurite vestibolare pregressa', 'Malattia di Ménière', 'Chirurgia otologica', 'Otite media cronica', 'Neurinoma dell’acustico', 'Ictus o TIA', 'Sclerosi multipla', 'Parkinson o parkinsonismi', 'Neuropatia periferica', 'Diabete', 'Deficit visivo o cataratta recente', 'Cambio recente di occhiali o lenti progressive'] },
+      { k: 'vestFarmaci', l: 'Farmaci in uso', t: 'textarea', w: 'full', rows: 2,
+        hint: 'Annotare in particolare sedativi vestibolari e benzodiazepine (rallentano il compenso), antiipertensivi, antidepressivi, antiepilettici, aminoglicosidi e chemioterapici ototossici.' },
+      { k: 'vestImpatto', l: 'Impatto su autonomia, guida, lavoro e partecipazione', t: 'textarea', w: 'full', rows: 2 }
+    ]
+  },
+  {
+    id: 'vestAllarme',
+    title: 'Segnali di allarme e sospetto di causa centrale',
+    sub: 'Da verificare prima di qualunque test provocativo o manovra. Un solo elemento presente impone il confronto con il medico e, in caso di sindrome vestibolare acuta, l’invio urgente.',
+    fields: [
+      { k: 'vestRedFlags', l: 'Segnali di allarme', t: 'chips', w: 'full', alert: true,
+        o: ['Cefalea improvvisa e intensissima (“a rombo di tuono”)', 'Deficit neurologici focali', 'Diplopia', 'Disartria', 'Disfagia', 'Ipostenia o ipoestesia di un emilato', 'Atassia del tronco che impedisce la stazione eretta', 'Ipoacusia acuta unilaterale di nuova insorgenza', 'Nistagmo verticale puro o torsionale puro', 'Nistagmo che cambia direzione con la direzione dello sguardo', 'Nistagmo non soppresso dalla fissazione', 'Skew deviation', 'Head Impulse Test normale in vertigine acuta continua', 'Dolore cervicale o occipitale inusuale e improvviso', 'Sincope o drop attack', 'Perdita di coscienza'] },
+      { k: 'vestHints', l: 'HINTS — solo nella sindrome vestibolare acuta continua in atto', t: 'sel', w: 'half',
+        o: ['Non applicabile', 'Quadro periferico (HIT patologico, nistagmo unidirezionale, nessuna skew)', 'Quadro centrale (anche un solo elemento: HIT normale, nistagmo direzione-mutevole, skew presente)', 'Non valutabile'],
+        hint: 'La batteria si applica soltanto a una vertigine acuta continua in corso, da esaminatore allenato. In quel contesto un quadro “centrale” è più sensibile della risonanza precoce nell’individuare un ictus. Non va usata nelle vertigini episodiche o già risolte.' },
+      { k: 'vestOrtostatica', l: 'Pressione arteriosa in clino e in ortostatismo (1’ e 3’)', t: 'text', w: 'half',
+        hint: 'Calo ≥ 20 mmHg di sistolica o ≥ 10 mmHg di diastolica: ipotensione ortostatica.' },
+      { k: 'vestConclusioneAllarme', l: 'Conclusione dello screening e decisione assunta', t: 'textarea', w: 'full', rows: 2, alert: true,
+        hint: 'Compilare solo quando c’è qualcosa da segnalare: il contenuto compare nel riquadro di allerta in cima alla cartella.' }
+    ]
+  },
+  {
+    id: 'vestOculomotore',
+    title: 'Esame oculomotore e riflesso vestibolo-oculomotore',
+    sub: 'La ricerca del nistagmo va fatta rimuovendo la fissazione (occhiali di Frenzel, videoculoscopia o, in mancanza, test di Frenzel improvvisato al buio): il nistagmo periferico viene soppresso dalla fissazione e senza questo accorgimento sfugge.',
+    fields: [
+      { k: 'vestNistagmo', l: 'Nistagmo spontaneo (senza fissazione)', t: 'sel', w: 'half',
+        o: ['Assente', 'Orizzontale-torsionale unidirezionale', 'Orizzontale puro unidirezionale', 'Verticale verso l’alto (upbeat)', 'Verticale verso il basso (downbeat)', 'Torsionale puro', 'Direzione mutevole', 'Non valutato'] },
+      { k: 'vestNistagmoLato', l: 'Fase rapida diretta verso', t: 'sel', w: 'quarter', o: LATO },
+      { k: 'vestFissazione', l: 'Effetto della fissazione', t: 'sel', w: 'quarter',
+        o: ['Non valutato', 'Il nistagmo si sopprime (orienta al periferico)', 'Il nistagmo non si sopprime (orienta al centrale)', 'Non applicabile'] },
+      { k: 'vestGazeEvoked', l: 'Nistagmo evocato dallo sguardo eccentrico', t: 'radio', w: 'third', o: SI_NO_ND },
+      { k: 'vestInseguimento', l: 'Inseguimento lento (smooth pursuit)', t: 'sel', w: 'third',
+        o: ['Non valutato', 'Fluido', 'Saccadico'] },
+      { k: 'vestSaccadi', l: 'Saccadi', t: 'sel', w: 'third',
+        o: ['Non valutate', 'Normometriche', 'Ipometriche', 'Ipermetriche', 'Rallentate'] },
+      { k: 'vestHitDx', l: 'Head Impulse Test — destro', t: 'sel', w: 'third',
+        o: ['Non valutato', 'Normale', 'Saccade di rifissazione palese (deficit)', 'Saccade coperta (sospetto deficit)'] },
+      { k: 'vestHitSx', l: 'Head Impulse Test — sinistro', t: 'sel', w: 'third',
+        o: ['Non valutato', 'Normale', 'Saccade di rifissazione palese (deficit)', 'Saccade coperta (sospetto deficit)'] },
+      { k: 'vestHsn', l: 'Nistagmo da head shaking', t: 'sel', w: 'third',
+        o: ['Non valutato', 'Assente', 'Verso il lato sano (deficit controlaterale)', 'Verso il lato leso', 'Perverted: verticale dopo scuotimento orizzontale (sospetto centrale)'] },
+      { k: 'vestSkew', l: 'Skew deviation (cover test alternato)', t: 'radio', w: 'third', o: SI_NO_ND },
+      { k: 'vestDva', l: 'Acuità visiva dinamica — righe perse', t: 'num', w: 'third',
+        hint: 'Differenza fra acuità statica e acuità con oscillazione del capo a 2 Hz. Una perdita di 3 o più righe indica un deficit del riflesso vestibolo-oculomotore.' },
+      { k: 'vestVibrazione', l: 'Nistagmo da vibrazione mastoidea', t: 'sel', w: 'third',
+        o: ['Non valutato', 'Assente', 'Presente, verso il lato sano', 'Presente, verso il lato leso'] },
+      { k: 'vestStrumentali', l: 'Esami strumentali otoneurologici', t: 'textarea', w: 'full', rows: 2,
+        hint: 'vHIT con guadagno del VOR per canale, prove caloriche, VEMP cervicali e oculari, video-oculografia, audiometria tonale, posturografia: riportare data e reperti.' },
+      { k: 'vestNoteOculo', l: 'Note sull’esame oculomotore', t: 'textarea', w: 'full', rows: 2 }
+    ]
+  },
+  {
+    id: 'vestPosizionali',
+    title: 'Test posizionali e manovre liberatorie (VPPB)',
+    sub: 'Riferimento: Clinical Practice Guideline on Benign Paroxysmal Positional Vertigo (AAO-HNSF, aggiornamento 2017) e criteri diagnostici della Bárány Society (2015). I test vanno eseguiti senza fissazione e mantenendo la posizione almeno 30 secondi.',
+    fields: [
+      { k: 'vestDixDx', l: 'Dix-Hallpike destro', t: 'sel', w: 'half',
+        o: ['Non eseguito', 'Negativo', 'Positivo — nistagmo verso l’alto e torsionale geotropo (canale posteriore destro)', 'Positivo — nistagmo verso il basso (canale anteriore o forma apogeotropa del posteriore)', 'Positivo — nistagmo atipico o persistente', 'Sintomi senza nistagmo'] },
+      { k: 'vestDixSx', l: 'Dix-Hallpike sinistro', t: 'sel', w: 'half',
+        o: ['Non eseguito', 'Negativo', 'Positivo — nistagmo verso l’alto e torsionale geotropo (canale posteriore sinistro)', 'Positivo — nistagmo verso il basso (canale anteriore o forma apogeotropa del posteriore)', 'Positivo — nistagmo atipico o persistente', 'Sintomi senza nistagmo'] },
+      { k: 'vestRoll', l: 'Supine roll test (canale laterale)', t: 'sel', w: 'half',
+        o: ['Non eseguito', 'Negativo', 'Nistagmo geotropo (canalolitiasi del canale laterale)', 'Nistagmo apogeotropo (cupololitiasi o braccio anteriore)', 'Atipico'],
+        hint: 'Da eseguire sempre quando il Dix-Hallpike è negativo ma la storia è tipica.' },
+      { k: 'vestLatoLaterale', l: 'Lato affetto presunto nel canale laterale', t: 'sel', w: 'half', o: LATO,
+        hint: 'Nella forma geotropa è il lato in cui il nistagmo è più intenso; nella forma apogeotropa il lato in cui è meno intenso.' },
+      { k: 'vestLatenza', l: 'Latenza, durata e faticabilità del nistagmo', t: 'text', w: 'full',
+        hint: 'La VPPB tipica ha latenza di pochi secondi, durata inferiore al minuto e si esaurisce con la ripetizione. Un nistagmo posizionale immediato, persistente e non faticabile fa sospettare una causa centrale.' },
+      { k: 'vestCanale', l: 'Canale identificato', t: 'sel', w: 'half',
+        o: ['—', 'Posteriore destro', 'Posteriore sinistro', 'Laterale destro', 'Laterale sinistro', 'Anteriore destro', 'Anteriore sinistro', 'Coinvolgimento multicanale', 'Non determinabile'] },
+      { k: 'vestRecidive', l: 'Episodi di VPPB precedenti (numero)', t: 'num', w: 'quarter' },
+      { k: 'vestManovre', l: 'Manovre eseguite', t: 'chips', w: 'full',
+        o: ['Epley (canale posteriore)', 'Semont (canale posteriore)', 'Semont-plus', 'Gufoni per forma geotropa', 'Gufoni per forma apogeotropa', 'Barbecue roll / Lempert 360°', 'Zuma e Maia', 'Yacovino / deep head hanging (canale anteriore)', 'Brandt-Daroff come esercizio domiciliare'] },
+      { k: 'vestEsitoManovra', l: 'Esito al test di controllo', t: 'sel', w: 'half',
+        o: ['Non rivalutato', 'Risolto — test di controllo negativo', 'Migliorato, da ripetere', 'Conversione di canale', 'Invariato'],
+        hint: 'Il controllo va fatto nella stessa seduta e ripetuto all’incontro successivo: è l’unico modo per sapere se la manovra ha funzionato.' },
+      { k: 'vestNoteVppb', l: 'Note e indicazioni date al paziente', t: 'textarea', w: 'full', rows: 2,
+        hint: 'Le restrizioni posturali dopo la manovra non sono raccomandate di routine. Vanno invece spiegati la possibilità di instabilità residua per qualche giorno e il rischio di recidiva, con le istruzioni per riconoscerla.' }
+    ]
+  },
+  {
+    id: 'vestEquilibrio',
+    title: 'Equilibrio, cammino e rischio di caduta',
+    sub: 'Misure con valori di riferimento noti, così da poter dimostrare il cambiamento. Compilare almeno una misura dell’equilibrio statico, una del cammino e una del rischio di caduta.',
+    fields: [
+      { k: 'vestRomberg', l: 'Romberg', t: 'sel', w: 'third',
+        o: ['Non eseguito', 'Normale', 'Instabile a occhi chiusi', 'Instabile anche a occhi aperti'] },
+      { k: 'vestCtsib', l: 'mCTSIB — condizioni (secondi di tenuta, max 30)', t: 'table', w: 'full',
+        cols: [
+          { k: 'condizione', l: 'Condizione', t: 'sel', o: ['Superficie ferma, occhi aperti', 'Superficie ferma, occhi chiusi', 'Gommapiuma, occhi aperti', 'Gommapiuma, occhi chiusi'] },
+          { k: 'secondi', l: 'Secondi', t: 'num', width: '90px' },
+          { k: 'oscillazioni', l: 'Oscillazioni / strategia osservata', t: 'text' }
+        ],
+        hint: 'Il confronto fra le quattro condizioni dice quale canale sensoriale il paziente sta usando: caduta solo sulla gommapiuma a occhi chiusi orienta a un deficit vestibolare; peggioramento a occhi chiusi su entrambe le superfici a un deficit propriocettivo.' },
+      { k: 'vestMonopodalico', l: 'Appoggio monopodalico (secondi, occhi aperti / chiusi)', t: 'text', w: 'third' },
+      { k: 'vestFukuda', l: 'Unterberger-Fukuda — rotazione in gradi', t: 'text', w: 'third',
+        hint: 'Test di scarsa specificità da solo: ha valore solo dentro un quadro coerente.' },
+      { k: 'vestFga', l: 'FGA — Functional Gait Assessment (su 30)', t: 'num', w: 'third',
+        hint: 'Punteggio ≤ 22/30 associato a maggior rischio di caduta negli adulti con disfunzione vestibolare. Differenza minima rilevabile ≈ 4 punti.' },
+      { k: 'vestDgi', l: 'DGI — Dynamic Gait Index (su 24)', t: 'num', w: 'third',
+        hint: 'Punteggio ≤ 19/24 associato a rischio di caduta.' },
+      { k: 'vestMiniBest', l: 'Mini-BESTest (su 28)', t: 'num', w: 'third' },
+      { k: 'vestBerg', l: 'Berg Balance Scale (su 56)', t: 'num', w: 'third' },
+      { k: 'vestTug', l: 'Timed Up and Go (secondi)', t: 'num', w: 'third',
+        hint: 'Tempo ≥ 13,5 secondi associato a rischio di caduta nell’anziano; utile anche la versione con doppio compito.' },
+      { k: 'vestVelocita', l: 'Velocità del cammino (m/s)', t: 'num', w: 'third',
+        hint: 'Sotto 1,0 m/s indica una mobilità ridotta; sotto 0,6 m/s una limitazione marcata.' },
+      { k: 'vest5sts', l: 'Five Times Sit to Stand (secondi)', t: 'num', w: 'third' },
+      { k: 'vestDipendenzaVisiva', l: 'Dipendenza visiva o intolleranza agli ambienti complessi', t: 'radio', w: 'third', o: SI_NO_ND },
+      { k: 'vestAusili', l: 'Ausili per il cammino', t: 'sel', w: 'third',
+        o: ['Nessuno', 'Bastone', 'Due bastoni', 'Deambulatore', 'Appoggio a persona', 'Carrozzina'] },
+      { k: 'vestNoteEquilibrio', l: 'Note sull’equilibrio e sul cammino', t: 'textarea', w: 'full', rows: 2 }
+    ]
+  },
+  {
+    id: 'vestCervicale',
+    title: 'Contributo cervicale',
+    sub: 'La vertigine cervicogena è una diagnosi di esclusione: richiede che siano state escluse le cause vestibolari e centrali e che ci sia una stretta relazione temporale fra i sintomi e il dolore o la rigidità cervicale. Compilare anche lo screening cervicale nell’esame soggettivo.',
+    fields: [
+      { k: 'vestCervSospetto', l: 'Sospetto contributo cervicogeno', t: 'radio', w: 'third', o: SI_NO_ND },
+      { k: 'vestJpe', l: 'Errore di riposizionamento cervicale (JPE, gradi)', t: 'text', w: 'third',
+        hint: 'Errore medio superiore a circa 4,5° considerato alterato. Riportare la direzione più compromessa.' },
+      { k: 'vestSpnt', l: 'Smooth Pursuit Neck Torsion test', t: 'sel', w: 'third',
+        o: ['Non eseguito', 'Negativo', 'Positivo (inseguimento peggiora in torsione)'] },
+      { k: 'vestTorsione', l: 'Test di torsione cervicale (tronco ruotato, capo fermo)', t: 'sel', w: 'half',
+        o: ['Non eseguito', 'Negativo', 'Positivo — nistagmo o sintomi in torsione'] },
+      { k: 'vestNoteCerv', l: 'Note', t: 'textarea', w: 'full', rows: 2 }
+    ]
+  },
+  {
+    id: 'vestSintesi',
+    title: 'Inquadramento vestibolare e programma',
+    sub: 'Riferimento per l’esercizio e il dosaggio: Vestibular Rehabilitation for Peripheral Vestibular Hypofunction — Clinical Practice Guideline, aggiornamento 2022, Academy of Neurologic Physical Therapy (APTA).',
+    fields: [
+      { k: 'vestClassificazione', l: 'Inquadramento ipotizzato', t: 'sel', w: 'full',
+        o: ['—', 'VPPB', 'Vestibolopatia unilaterale acuta / neurite vestibolare', 'Ipofunzione vestibolare unilaterale cronica', 'Vestibolopatia bilaterale', 'Malattia di Ménière', 'Emicrania vestibolare', 'PPPD — capogiro posturale-percettivo persistente', 'Vertigine parossistica', 'Deiscenza del canale semicircolare superiore', 'Presbivestibolopatia', 'Vertigine cervicogena (per esclusione)', 'Instabilità multifattoriale dell’anziano', 'Ipotensione ortostatica', 'Sospetta causa centrale — inviato al medico', 'Non ancora definito'] },
+      { k: 'vestMotivazione', l: 'Elementi a sostegno e contro l’inquadramento', t: 'textarea', w: 'full', rows: 3,
+        hint: 'Quali reperti lo sostengono, quali no, che cosa resta da chiarire e come lo si chiarirà.' },
+      { k: 'vestEsercizi', l: 'Programma riabilitativo', t: 'chips', w: 'full',
+        o: ['Stabilizzazione dello sguardo x1', 'Stabilizzazione dello sguardo x2', 'Adattamento con target multipli', 'Sostituzione: saccadi e inseguimento anticipatorio', 'Abituazione: esposizione graduata ai movimenti provocativi', 'Equilibrio statico con progressione sensoriale', 'Equilibrio dinamico e cammino', 'Cammino con movimenti del capo', 'Esposizione a stimoli optocinetici e ambienti complessi', 'Doppio compito motorio-cognitivo', 'Rinforzo degli arti inferiori', 'Esercizio aerobico', 'Manovre liberatorie', 'Educazione e rassicurazione'] },
+      { k: 'vestDose', l: 'Dosaggio e progressione', t: 'textarea', w: 'full', rows: 3,
+        hint: 'Indicazioni della linea guida: esercizi di stabilizzazione dello sguardo distribuiti in più sedute quotidiane, per un totale indicativo di circa 12 minuti al giorno nell’ipofunzione unilaterale acuta o subacuta e di 20 minuti al giorno in quella cronica, fino a 20–40 minuti nella vestibolopatia bilaterale, insieme a esercizi di equilibrio e cammino, per 4–6 settimane nell’unilaterale e 5–7 nella bilaterale. Vanno adattati al singolo e progrediti in difficoltà, non ripetuti identici.' },
+      { k: 'vestEducazione', l: 'Educazione e indicazioni al paziente', t: 'textarea', w: 'full', rows: 3,
+        hint: 'Punti utili: un po’ di sintomi durante gli esercizi è atteso e non dannoso; l’uso prolungato di sedativi vestibolari rallenta il compenso e va concordato con il medico; il movimento e il rientro nelle attività favoriscono il recupero; come comportarsi in caso di recidiva.' },
+      { k: 'vestSicurezza', l: 'Prevenzione delle cadute e sicurezza domestica', t: 'textarea', w: 'full', rows: 2,
+        hint: 'Illuminazione notturna, tappeti, calzature, scale, revisione dei farmaci e della vista, necessità di ausili.' },
+      { k: 'vestRivalutazione', l: 'Misure di esito scelte e quando rivalutare', t: 'text', w: 'full',
+        hint: 'Indicare le misure che verranno ripetute (es. DHI, ABC, FGA, acuità visiva dinamica) e la data della rivalutazione.' }
+    ]
+  }
+];
+
+/* ------------------------------------------------------------------ */
 /* 4. DIAGNOSI E RAGIONAMENTO                                          */
 /* ------------------------------------------------------------------ */
 export const DIAGNOSI = [
@@ -466,6 +673,7 @@ export const CARTELLA = [
   { key: 'soggettivo', label: 'Esame soggettivo', sections: SOGGETTIVO },
   { key: 'ipotesi', label: 'Ipotesi e ragionamento', sections: IPOTESI },
   { key: 'obiettivo', label: 'Esame fisico', sections: OBIETTIVO },
+  { key: 'vestibolare', label: 'Equilibrio e vestibolo', sections: VESTIBOLARE },
   { key: 'diagnosi', label: 'Diagnosi', sections: DIAGNOSI },
   { key: 'piano', label: 'Piano di trattamento', sections: PIANO },
   { key: 'esito', label: 'Esito', sections: ESITO }

@@ -432,5 +432,50 @@ eq('import: nessun progressivo', numeroProgressivo('ABC'), null);
   eq('bozza non emessa', emessa({}), false);
 }
 
+// Parte vestibolare della cartella
+{
+  const { CARTELLA, VESTIBOLARE, campiAllerta } = await import('../app/js/schema/ompt.js');
+  eq('cartella: la parte vestibolare esiste ed è prima della diagnosi',
+    CARTELLA.findIndex(p => p.key === 'vestibolare') < CARTELLA.findIndex(p => p.key === 'diagnosi')
+    && CARTELLA.some(p => p.key === 'vestibolare'), true);
+  eq('vestibolare: sezioni previste',
+    VESTIBOLARE.map(s => s.id),
+    ['vestInquadramento', 'vestAllarme', 'vestOculomotore', 'vestPosizionali', 'vestEquilibrio', 'vestCervicale', 'vestSintesi']);
+  eq('vestibolare: i segnali di allarme alimentano il riquadro di allerta',
+    campiAllerta().filter(a => a.parte === 'vestibolare').map(a => a.campo),
+    ['vestRedFlags', 'vestConclusioneAllarme']);
+  // Ogni campo deve avere chiave, etichetta e tipo: senza, il renderer salta la voce.
+  const rotti = VESTIBOLARE.flatMap(s => s.fields.filter(f => !f.k || !f.l || !f.t).map(f => s.id + '/' + (f.k || '?')));
+  eq('vestibolare: nessun campo incompleto', rotti, []);
+  // Le chiavi non possono ripetersi dentro la stessa sezione: si sovrascriverebbero.
+  const dup = VESTIBOLARE.flatMap(s => {
+    const viste = new Set();
+    return s.fields.filter(f => viste.has(f.k) || (viste.add(f.k), false)).map(f => s.id + '/' + f.k);
+  });
+  eq('vestibolare: nessuna chiave ripetuta', dup, []);
+}
+
+// DHI e ABC
+{
+  const tutti4 = {}; for (let i = 1; i <= 25; i++) tutti4['i' + i] = '4';
+  eq('DHI: punteggio massimo', calcolaProm('dhi', tutti4).punteggio, 100);
+  const meta = {}; for (let i = 1; i <= 25; i++) meta['i' + i] = i <= 12 ? '4' : '0';
+  eq('DHI: handicap moderato', calcolaProm('dhi', meta).etichetta, '48/100 — handicap moderato');
+  const pochi = { i1: '4', i2: '2' };
+  eq('DHI: troppi item mancanti, nessun punteggio', calcolaProm('dhi', pochi), null);
+
+  const abc = {}; for (let i = 1; i <= 16; i++) abc['i' + i] = '90';
+  eq('ABC: media percentuale', calcolaProm('abc', abc).etichetta, '90% — funzionamento alto');
+  eq('ABC: direzione del miglioramento', confrontaProm('abc', 40, 60).miglioramento, 20);
+  eq('DHI: direzione del miglioramento', confrontaProm('dhi', 60, 40).miglioramento, 20);
+}
+
+// La versione è dichiarata in un solo punto e coincide con package.json
+{
+  const { VERSIONE } = await import('../app/js/versione.js');
+  const pkg = JSON.parse(await (await import('node:fs/promises')).readFile(new URL('../package.json', import.meta.url), 'utf8'));
+  eq('versione: coerente con package.json', pkg.version.split('.').slice(0, 2).join('.'), VERSIONE);
+}
+
 console.log(ko ? `\n${ko} TEST FALLITI` : '\nTutti i test superati');
 process.exit(ko ? 1 : 0);

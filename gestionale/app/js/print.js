@@ -201,12 +201,12 @@ export function documentoFattura(fattura, paziente, imp, { etichettaCopia = '' }
   for (const n of noteFattura(fattura, imp, tot)) note.appendChild(h('p', n));
   doc.appendChild(note);
 
-  doc.appendChild(h('div', { class: 'sign-row avoid-break' },
+  // Sulla fattura firma solo chi la emette: il documento attesta la prestazione
+  // e il corrispettivo, e non richiede la sottoscrizione del paziente.
+  doc.appendChild(h('div', { class: 'sign-row sign-row-single avoid-break' },
     h('div', { class: 'sign-col' },
       imp.firmaInFattura ? firmaStudio(imp) : null,
-      h('div', { class: 'sign' }, 'Firma del professionista')),
-    h('div', { class: 'sign-col' },
-      h('div', { class: 'sign' }, 'Per quietanza / firma del paziente'))));
+      h('div', { class: 'sign' }, 'Firma del professionista'))));
 
   return doc;
 }
@@ -235,7 +235,7 @@ export function stampaFattura(fattura, paziente, imp, opzioni = {}) {
 /* ------------------------------------------------------------------ */
 /* CARTELLA CLINICA                                                    */
 /* ------------------------------------------------------------------ */
-function valoreLeggibile(f, v) {
+export function valoreLeggibile(f, v) {
   if (isEmptyVal(v)) return null;
   if (f.t === 'body') {
     const m = v.marcatori || [];
@@ -250,6 +250,8 @@ function valoreLeggibile(f, v) {
     return v.join(' · ');
   }
   if (f.t === 'scale') return `${v}/10`;
+  // Le date si leggono nel formato italiano, non come le salva il browser.
+  if (f.t === 'date') return fmtDate(v);
   return String(v);
 }
 
