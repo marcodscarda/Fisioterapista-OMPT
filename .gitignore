@@ -1,7 +1,11 @@
 node_modules/
+# Playwright serve solo ai test end-to-end e si installa a parte:
+# il lock finirebbe per dichiarare una dipendenza che il progetto non ha.
+package-lock.json
 .DS_Store
 *.log
 
 # Backup del gestionale: contengono dati sanitari, non devono finire nel repository
 backup-gestionale-ompt-*.json
 *.backup.json
+Backup Gestionale OMPT/

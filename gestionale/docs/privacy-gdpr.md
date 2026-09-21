@@ -22,9 +22,18 @@ stringenti dei dati comuni.
    - cifratura del disco (BitLocker, FileVault, LUKS);
    - account con password e blocco schermo automatico;
    - nessun profilo browser condiviso con altri.
-3. **Backup.** Il file JSON scaricato **non è cifrato**. Va conservato su supporto cifrato o dentro
-   un archivio protetto da password; non va lasciato in cartelle sincronizzate in chiaro né inviato
-   per e-mail. Tienine almeno una copia fuori sede.
+3. **Backup.** Il file JSON **non è cifrato**, né quello scaricato a mano né quello della copia
+   automatica su disco. Va conservato su supporto cifrato o dentro un archivio protetto da
+   password; non va lasciato in cartelle sincronizzate in chiaro né inviato per e-mail. Tienine
+   almeno una copia fuori sede.
+
+   La **copia automatica** scrive in `Documenti/Backup Gestionale OMPT` (o nella cartella indicata
+   con `--backup=`) e conserva le ultime 30 copie. Quella cartella contiene l'intera cartella
+   clinica dei tuoi pazienti: vale quanto l'archivio di carta. Su Mac attiva **FileVault**, su
+   Windows **BitLocker**, così il disco è cifrato e il contenuto resta illeggibile a chi non ha le
+   tue credenziali. Se la cartella *Documenti* è sincronizzata su un servizio cloud, o sposti la
+   destinazione altrove, o accetti che quei dati finiscano su quel servizio — e in quel caso serve
+   un contratto di responsabile del trattamento con il fornitore (art. 28).
 4. **Conservazione.** La documentazione sanitaria va conservata per il periodo previsto (nel
    gestionale l'impostazione predefinita è 10 anni, modificabile). I documenti fiscali seguono i
    termini tributari.

@@ -69,6 +69,12 @@ prima di riceverlo, senza aprire una per una le sezioni del modulo. Da ogni bloc
 compilazione con *Apri e modifica*. La stessa anteprima si apre dall'elenco degli episodi nella
 scheda del paziente, senza entrare nella cartella.
 
+### Esercizi
+La scheda **Esercizi** dell'episodio raccoglie il programma domiciliare: esercizi scelti da una
+libreria dello studio, riordinabili, con la dose personalizzata paziente per paziente. Da lì si
+stampa la scheda da consegnare, con foto, descrizione, dose e link ai video.
+Dettagli in [`esercizi.md`](esercizi.md).
+
 ### Consenso
 Il consenso informato è documentato nel piano. Per le tecniche manipolative ad alta velocità e
 bassa ampiezza è raccomandato un consenso **scritto e specifico**: se il piano prevede

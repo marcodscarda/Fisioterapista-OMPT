@@ -193,6 +193,7 @@ function renderSedute(root, ep, paz, sedute, imp) {
     h('div', { class: 'btn-row', style: { marginBottom: '12px' } },
       h('span', { class: 'faint small' }, 'Ogni seduta segue la struttura SOAP e rivaluta automaticamente gli asterischi definiti nella valutazione.'),
       h('span', { class: 'spacer' }),
+      h('button', { class: 'btn', onClick: () => menuModelli(ep, paz, sedute, imp) }, '⧉ Da modello'),
       h('button', { class: 'btn btn-primary', onClick: () => nuovaSeduta(ep, paz, sedute, imp) }, '+ Nuova seduta')),
     h('div', { class: 'card card-tight' }, tabella({
       colonne: [
@@ -230,7 +231,7 @@ function graficoNprs(sedute) {
     barChart(dati, { formatta: (v) => String(v) }));
 }
 
-async function nuovaSeduta(ep, paz, sedute, imp) {
+async function nuovaSeduta(ep, paz, sedute, imp, modello = null) {
   const ultimo = sedute.reduce((m, s) => Math.max(m, Number(s.numero) || 0), 0);
   const prestazioneDefault = imp.listino?.[ultimo === 0 ? 0 : 1] || imp.listino?.[0];
   const s = await db.put('sedute', {
@@ -239,13 +240,101 @@ async function nuovaSeduta(ep, paz, sedute, imp) {
     numero: ultimo + 1,
     data: todayISO(),
     ora: '',
-    durata: prestazioneDefault?.durata || 45,
+    durata: modello?.durata || prestazioneDefault?.durata || 45,
     prestazioneId: prestazioneDefault?.id || '',
-    prestazione: prestazioneDefault?.nome || '',
+    prestazione: modello?.prestazione || prestazioneDefault?.nome || '',
     importo: prestazioneDefault?.prezzo ?? 0,
-    dati: {}
+    // Il modello riempie i campi SOAP: resta tutto modificabile, e' un punto
+    // di partenza scritto una volta invece che riscritto a ogni seduta uguale.
+    dati: modello?.dati ? JSON.parse(JSON.stringify(modello.dati)) : {}
   });
   editorSeduta(ep, paz, s, [...sedute, s], imp);
+}
+
+/* ------------------------------------------------------------------ */
+/* Modelli di seduta                                                   */
+/* ------------------------------------------------------------------ */
+/**
+ * Un modello e' una seduta tipo: i campi SOAP gia' compilati per il
+ * trattamento che si ripete. Si crea da una seduta esistente, cosi' non
+ * bisogna scriverlo due volte.
+ */
+async function menuModelli(ep, paz, sedute, imp) {
+  const modelli = (await db.all('modelliSeduta'))
+    .sort((a, b) => (a.nome || '').localeCompare(b.nome || '', 'it'));
+
+  const elenco = h('div');
+  const disegna = () => {
+    clear(elenco);
+    if (!modelli.length) {
+      add(elenco, vuoto('Nessun modello salvato. Apri una seduta già compilata e usa «Salva come modello».'));
+      return;
+    }
+    for (const m of modelli) {
+      add(elenco, h('div', { class: 'scelta-riga' },
+        h('div', { style: { flex: '1', minWidth: '0' } },
+          h('strong', m.nome),
+          h('div', { class: 'faint small' },
+            [m.prestazione, m.durata ? m.durata + ' min' : null, m.note].filter(Boolean).join(' · '))),
+        h('button', {
+          class: 'btn btn-sm btn-danger',
+          onClick: async () => {
+            if (!await conferma(`Eliminare il modello “${m.nome}”?`, { title: 'Elimina modello', okLabel: 'Elimina', danger: true })) return;
+            await db.del('modelliSeduta', m.id);
+            modelli.splice(modelli.indexOf(m), 1);
+            disegna();
+          }
+        }, '🗑'),
+        h('button', {
+          class: 'btn btn-sm btn-primary',
+          onClick: () => { chiudi(); nuovaSeduta(ep, paz, sedute, imp, m); }
+        }, 'Usa')));
+    }
+  };
+
+  const finestra = modal({
+    title: 'Nuova seduta da modello',
+    size: 'lg',
+    body: h('div',
+      h('p', { class: 'faint small' },
+        'Il modello precompila i campi della seduta: resta tutto modificabile.'),
+      elenco),
+    actions: [{ label: 'Chiudi' }]
+  });
+  const chiudi = () => finestra.close();
+  disegna();
+}
+
+/** Salva la seduta corrente come modello riusabile. */
+function salvaComeModello(s) {
+  let nome = s.prestazione || 'Seduta tipo';
+  modal({
+    title: 'Salva come modello',
+    body: h('div',
+      h('p', { class: 'small faint' },
+        'Verranno salvati i campi SOAP compilati, la prestazione e la durata. ' +
+        'Nessun dato del paziente finisce nel modello.'),
+      h('div', { class: 'field w-full' },
+        h('label', 'Nome del modello'),
+        h('input', { type: 'text', value: nome, onInput: (ev) => { nome = ev.target.value; } }))),
+    actions: [
+      { label: 'Annulla' },
+      {
+        label: 'Salva', class: 'btn-primary', keepOpen: true, onClick: async (chiudi) => {
+          if (!nome.trim()) { toast('Dai un nome al modello.', 'err'); return false; }
+          await db.put('modelliSeduta', {
+            nome: nome.trim(),
+            prestazione: s.prestazione || '',
+            durata: s.durata || null,
+            dati: JSON.parse(JSON.stringify(s.dati || {})),
+            creatoIl: todayISO()
+          });
+          chiudi();
+          toast('Modello salvato.', 'ok');
+        }
+      }
+    ]
+  });
 }
 
 function editorSeduta(ep, paz, seduta, sedute, imp) {
@@ -303,6 +392,13 @@ function editorSeduta(ep, paz, seduta, sedute, imp) {
           toast('Seduta eliminata.', 'ok');
           close();
           S.aggiorna();
+        }
+      },
+      {
+        label: '⧉ Salva come modello', keepOpen: true, onClick: () => {
+          salva.flush();
+          salvaComeModello(s);
+          return false;
         }
       },
       { label: 'Chiudi', class: 'btn-primary' }

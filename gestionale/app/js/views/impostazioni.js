@@ -4,9 +4,10 @@
 import {
   add, h, clear, toast, num, uid, downloadFile, pickFile, readFileText, validaPIVA, validaCF, validaIBAN, fmtEUR, fmtDate
 } from '../util.js';
-import { modal, conferma, tabs } from '../ui/kit.js';
+import { modal, conferma, tabs, badge } from '../ui/kit.js';
 import * as db from '../db.js';
 import * as S from '../state.js';
+import { backupDisponibile, salvaSuDisco, ultimoBackupAutomatico } from '../backup.js';
 import { stampaModulo } from '../print.js';
 import { caricaImmagine } from '../ui/immagini.js';
 import { ETICHETTE } from '../calendario.js';
@@ -205,6 +206,8 @@ export async function vistaImpostazioni(root, { tab = 'studio' } = {}) {
         h('p', { class: 'faint small', style: { marginTop: '10px' } },
           '“Unendo” aggiorna i record con lo stesso identificativo e aggiunge i nuovi. “Sostituendo” svuota gli archivi prima di importare.')),
 
+      riquadroBackupAutomatico(imp, salva),
+
       h('div', { class: 'card' },
         h('div', { class: 'card-head' }, h('h2', 'Importazione da un altro gestionale')),
         h('p', { class: 'small' },
@@ -362,4 +365,101 @@ async function azzera() {
   await S.imp(true);
   toast('Tutti i dati sono stati cancellati.', 'ok');
   S.vai('/');
+}
+
+
+/* ------------------------------------------------------------------ */
+/* Backup automatico su disco                                          */
+/* ------------------------------------------------------------------ */
+/**
+ * Il riquadro si adatta a quello che il server sa fare: se il gestionale e'
+ * aperto senza il suo server, scrivere su disco e' impossibile e dirlo e'
+ * piu' utile che mostrare un interruttore che non farebbe nulla.
+ */
+function riquadroBackupAutomatico(imp, salva) {
+  const corpo = h('div', { class: 'card' },
+    h('div', { class: 'card-head' }, h('h2', 'Copia automatica su disco')),
+    h('p', { class: 'faint small' }, 'Verifica in corso…'));
+
+  backupDisponibile().then(stato => {
+    clear(corpo);
+    if (!stato) {
+      add(corpo,
+        h('div', { class: 'card-head' }, h('h2', 'Copia automatica su disco')),
+        h('div', { class: 'alert warn' },
+          h('strong', 'Non disponibile in questa modalità. '),
+          'La copia automatica la scrive il server locale del gestionale: apri il programma con ' +
+          '«Avvia gestionale» (o con l’icona sulla Scrivania) e comparirà qui.'));
+      return;
+    }
+
+    const ultimo = ultimoBackupAutomatico();
+    const attivo = imp.backupAutomatico !== false;
+    const elenco = h('div');
+    const disegnaElenco = (file) => {
+      clear(elenco);
+      if (!file.length) { add(elenco, h('p', { class: 'faint small mb0' }, 'Nessuna copia ancora salvata.')); return; }
+      add(elenco, h('div', { class: 'table-wrap' }, h('table', { class: 'tbl tbl-mini' },
+        h('thead', h('tr', h('th', 'File'), h('th', 'Quando'), h('th', 'Dimensione'))),
+        h('tbody', file.slice(0, 8).map(f => h('tr',
+          h('td', h('span', { class: 'small mono' }, f.nome)),
+          h('td', h('span', { class: 'small' }, new Date(f.modificatoIl).toLocaleString('it-IT'))),
+          h('td', h('span', { class: 'small' }, Math.max(1, Math.round(f.byte / 1024)) + ' kB'))))))));
+      if (file.length > 8) add(elenco, h('p', { class: 'faint small' }, `…e altre ${file.length - 8}.`));
+    };
+    disegnaElenco(stato.file);
+
+    add(corpo,
+      h('div', { class: 'card-head' },
+        h('h2', 'Copia automatica su disco'),
+        h('span', { class: 'spacer' }),
+        badge(attivo ? 'attiva' : 'disattivata', attivo ? 'ok' : '')),
+      h('p', { class: 'small' },
+        'All’avvio il gestionale salva da solo una copia completa dei dati in una cartella del tuo computer, ' +
+        'e conserva le ultime ' + stato.daTenere + '.'),
+      h('div', { class: 'field w-full' },
+        h('label', 'Cartella'),
+        h('input', { type: 'text', value: stato.cartella, readonly: true }),
+        h('span', { class: 'hint' },
+          'Per cambiarla, avvia il gestionale con --backup=/percorso/della/cartella.')),
+      h('div', { class: 'check-row' },
+        h('input', {
+          type: 'checkbox', id: 'backup-auto', checked: attivo,
+          onChange: (ev) => { imp.backupAutomatico = ev.target.checked; salva(); }
+        }),
+        h('label', { for: 'backup-auto' }, 'Salva una copia automaticamente all’avvio')),
+      h('div', { class: 'field', style: { maxWidth: '260px' } },
+        h('label', 'Non più spesso di'),
+        h('select', {
+          onChange: (ev) => { imp.backupOgniOre = Number(ev.target.value); salva(); }
+        }, [[6, 'ogni 6 ore'], [24, 'una volta al giorno'], [72, 'ogni 3 giorni'], [168, 'una volta a settimana']]
+          .map(([v, l]) => h('option', { value: v, selected: (Number(imp.backupOgniOre) || 24) === v }, l)))),
+      ultimo
+        ? h('p', { class: 'faint small' }, 'Ultima copia automatica: ' + ultimo.toLocaleString('it-IT') + '.')
+        : h('p', { class: 'faint small' }, 'Nessuna copia automatica ancora eseguita da questo browser.'),
+      h('div', { class: 'alert warn' },
+        h('strong', 'Il file non è cifrato. '),
+        'Contiene la cartella clinica dei tuoi pazienti: tratta quella cartella come tratteresti l’archivio di carta, ' +
+        'e valuta di tenerla su un disco cifrato (su Mac, FileVault).'),
+      h('div', { class: 'btn-row' },
+        h('button', {
+          class: 'btn btn-primary', onClick: async (ev) => {
+            const bottone = ev.target;
+            bottone.disabled = true;
+            try {
+              const esito = await salvaSuDisco();
+              toast('Copia salvata: ' + esito.nome, 'ok');
+              disegnaElenco((await backupDisponibile())?.file || []);
+            } catch (err) {
+              toast('Copia non riuscita: ' + err.message, 'err');
+            } finally {
+              bottone.disabled = false;
+            }
+          }
+        }, '💾 Salva una copia adesso')),
+      h('h3', { class: 'ant-sez' }, 'Copie presenti'),
+      elenco);
+  });
+
+  return corpo;
 }

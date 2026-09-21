@@ -10,11 +10,21 @@
    passare dalla lettura alla correzione in un clic.
    ============================================================ */
 import { add, h, clear, fmtDate, nz, fullName, age } from '../util.js';
-import { badge, vuoto } from '../ui/kit.js';
+import { badge, vuoto, barChart } from '../ui/kit.js';
 import { CARTELLA, SEDUTA } from '../schema/ompt.js';
 import { PROMS, calcolaProm, confrontaProm } from '../schema/proms.js';
 import { valoreLeggibile } from '../print.js';
 import * as S from '../state.js';
+
+/** Compilazioni raggruppate per questionario, in ordine di data. */
+function raggruppaProms(proms) {
+  const per = new Map();
+  for (const c of [...(proms || [])].sort((a, b) => (a.data || '').localeCompare(b.data || ''))) {
+    if (!per.has(c.promId)) per.set(c.promId, []);
+    per.get(c.promId).push(c);
+  }
+  return per;
+}
 
 /** Cerca la definizione di un campo nello schema, per etichetta e formato. */
 function campoDi(parteK, sezK, campoK) {
@@ -138,11 +148,7 @@ export function riepilogoCartella(ep, { paz = null, sedute = [], onVai = null } 
 
   /* --- Questionari, con l'andamento fra prima e ultima compilazione --- */
   if (proms.length) {
-    const perProm = new Map();
-    for (const c of [...proms].sort((a, b) => (a.data || '').localeCompare(b.data || ''))) {
-      if (!perProm.has(c.promId)) perProm.set(c.promId, []);
-      perProm.get(c.promId).push(c);
-    }
+    const perProm = raggruppaProms(proms);
     const righe = [];
     for (const [promId, lista] of perProm) {
       const def = PROMS[promId];
@@ -167,6 +173,35 @@ export function riepilogoCartella(ep, { paz = null, sedute = [], onVai = null } 
       h('div', { class: 'table-wrap' }, h('table', { class: 'tbl tbl-mini' },
         h('thead', h('tr', h('th', 'Questionario'), h('th', 'Prima'), h('th', 'Ultima'), h('th', 'Variazione'))),
         h('tbody', righe)))));
+  }
+
+  /* --- Andamento: un grafico dice in un colpo d'occhio quello che una
+         tabella di numeri fa ricostruire riga per riga. --- */
+  const andamenti = [];
+  const nprs = [...sedute]
+    .sort((a, b) => (a.data || '').localeCompare(b.data || ''))
+    .filter(s => s.dati?.soggettivoSeduta?.nprs != null && s.dati.soggettivoSeduta.nprs !== '')
+    .map(s => ({ etichetta: fmtDate(s.data).slice(0, 5), valore: Number(s.dati.soggettivoSeduta.nprs) }));
+  if (nprs.length >= 2) {
+    andamenti.push(h('div', null,
+      h('h3', { class: 'ant-sez' }, 'Dolore riferito (NPRS)'),
+      barChart(nprs, { formatta: (v) => String(v) })));
+  }
+  for (const [promId, lista] of raggruppaProms(proms)) {
+    const def = PROMS[promId];
+    const punti = lista
+      .map(c => ({ compilazione: c, esito: calcolaProm(promId, c.valori) }))
+      .filter(x => x.esito)
+      .map(x => ({ etichetta: fmtDate(x.compilazione.data).slice(0, 5), valore: x.esito.punteggio, alt: true }));
+    if (punti.length < 2) continue;
+    andamenti.push(h('div', null,
+      h('h3', { class: 'ant-sez' }, (def?.breve || promId) + ' — ' + (def?.scala || '')),
+      barChart(punti, { formatta: (v) => String(v) })));
+  }
+  if (andamenti.length) {
+    add(radice, h('div', { class: 'card' },
+      h('div', { class: 'card-head' }, h('h2', 'Andamento')),
+      h('div', { class: 'ant-grafici' }, andamenti)));
   }
 
   /* --- Ultime sedute: quel che conta ricordare prima di rivedere il paziente --- */

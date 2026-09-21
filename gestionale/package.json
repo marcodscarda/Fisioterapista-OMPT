@@ -1,6 +1,6 @@
 {
   "name": "gestionale-ompt",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "description": "Gestionale per fisioterapista OMPT: cartella clinica IFOMPT, fatturazione cartacea e registro incassi. Nessuna dipendenza, dati solo in locale.",
   "type": "module",

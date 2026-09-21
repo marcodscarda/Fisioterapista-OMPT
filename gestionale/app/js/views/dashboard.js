@@ -47,6 +47,26 @@ export async function vistaDashboard(root) {
 
   const ultimeSedute = sedute.slice().sort((a, b) => (b.data || '').localeCompare(a.data || '')).slice(0, 8);
 
+  /* Episodi aperti che si sono fermati: sono i pazienti che si perdono per
+     strada, non quelli che hanno finito. Si considera l'ultima seduta, o in
+     mancanza la data di apertura, e si esclude chi ha gia' un appuntamento. */
+  const SETTIMANE_SILENZIO = Number(imp.richiamoDopoSettimane) || 4;
+  const ultimaSedutaPerEpisodio = new Map();
+  for (const s of sedute) {
+    const corrente = ultimaSedutaPerEpisodio.get(s.episodioId);
+    if (!corrente || (s.data || '') > corrente) ultimaSedutaPerEpisodio.set(s.episodioId, s.data || '');
+  }
+  const conAppuntamento = new Set(
+    appuntamenti.filter(a => a.data >= oggi && a.stato !== 'disdetto').map(a => a.pazienteId));
+  const daRichiamare = episodiAperti
+    .map(e => {
+      const ultima = ultimaSedutaPerEpisodio.get(e.id) || e.dataApertura || '';
+      return { e, ultima, giorni: ultima ? daysBetween(ultima, oggi) : null };
+    })
+    .filter(r => r.giorni != null && r.giorni >= SETTIMANE_SILENZIO * 7)
+    .filter(r => !conAppuntamento.has(r.e.pazienteId))
+    .sort((a, b) => b.giorni - a.giorni);
+
   add(clear(root), 
     setupIncompleto(imp, pazienti.length),
 
@@ -96,6 +116,28 @@ export async function vistaDashboard(root) {
           onRowClick: (s) => S.vai('/paziente/' + s.pazienteId + '/fatture'),
           vuotoTesto: 'Tutte le sedute sono state fatturate.'
         }))),
+
+    daRichiamare.length
+      ? h('div', { class: 'card card-tight' },
+        h('div', { class: 'card-head' },
+          h('h3', 'Episodi fermi'),
+          h('span', { class: 'spacer' }),
+          badge(`${daRichiamare.length} da richiamare`, 'warn')),
+        tabella({
+          colonne: [
+            { label: 'Paziente', cell: (r) => fullName(pazById.get(r.e.pazienteId)) || '—' },
+            { label: 'Episodio', cell: (r) => h('span', { class: 'small' }, nz(r.e.titolo, 'senza titolo')) },
+            { label: 'Ultimo contatto', cell: (r) => h('span', { class: 'small' }, fmtDate(r.ultima)) },
+            { label: 'Fermo da', num: true, cell: (r) => badge(`${Math.floor(r.giorni / 7)} settimane`, r.giorni >= 84 ? 'danger' : 'warn') }
+          ],
+          righe: daRichiamare.slice(0, 6),
+          onRowClick: (r) => S.vai('/cartella/' + r.e.id),
+          vuotoTesto: ''
+        }),
+        h('p', { class: 'faint small', style: { padding: '0 16px 12px' } },
+          `Episodi aperti senza sedute da almeno ${SETTIMANE_SILENZIO} settimane e senza appuntamenti in programma. ` +
+          'Se il percorso è concluso, chiudi l’episodio dalla sua cartella.'))
+      : null,
 
     h('div', { class: 'grid grid-2' },
       h('div', { class: 'card card-tight' },

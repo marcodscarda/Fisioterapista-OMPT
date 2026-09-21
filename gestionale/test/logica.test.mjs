@@ -477,5 +477,38 @@ eq('import: nessun progressivo', numeroProgressivo('ABC'), null);
   eq('versione: coerente con package.json', pkg.version.split('.').slice(0, 2).join('.'), VERSIONE);
 }
 
+// Libreria degli esercizi
+{
+  const es = await import('../app/js/schema/esercizi.js');
+  eq('esercizi: il catalogo di partenza non e vuoto', es.CATALOGO.length >= 20, true);
+  const incompleti = es.CATALOGO.filter(x => !x.nome || !x.regione || !x.categoria || !x.esecuzione);
+  eq('esercizi: ogni voce del catalogo e utilizzabile', incompleti.map(x => x.nome || '?'), []);
+  const fuoriElenco = es.CATALOGO.filter(x => !es.REGIONI.includes(x.regione) || !es.CATEGORIE.includes(x.categoria));
+  eq('esercizi: regioni e tipi appartengono agli elenchi', fuoriElenco.map(x => x.nome), []);
+  const nomi = es.CATALOGO.map(x => x.nome);
+  eq('esercizi: nessun nome ripetuto', nomi.length - new Set(nomi).size, 0);
+
+  eq('dose: riassunto leggibile',
+    es.doseInRiga({ serie: '3', ripetizioni: '12', recupero: '60 secondi' }),
+    '3 × 12 · recupero 60 secondi');
+  eq('dose: campi vuoti saltati', es.doseInRiga({ serie: '', ripetizioni: '10' }), '10 ripetizioni');
+  eq('dose: nessun dato', es.doseInRiga(null), '');
+
+  // La dose del paziente sovrascrive quella di libreria solo dove e indicata.
+  eq('dose: personalizzazione parziale',
+    es.doseEffettiva({ dose: { serie: '3', ripetizioni: '10' } }, { dose: { ripetizioni: '6 per lato' } }),
+    { serie: '3', ripetizioni: '6 per lato' });
+  eq('dose: nessuna personalizzazione',
+    es.doseEffettiva({ dose: { serie: '3' } }, {}), { serie: '3' });
+}
+
+// Gli archivi nuovi fanno parte del backup: senza, esercizi e modelli si perderebbero
+{
+  const dbmod = await import('../app/js/db.js');
+  for (const store of ['esercizi', 'modelliSeduta']) {
+    eq('backup: comprende l archivio ' + store, dbmod.STORE_NAMES.includes(store), true);
+  }
+}
+
 console.log(ko ? `\n${ko} TEST FALLITI` : '\nTutti i test superati');
 process.exit(ko ? 1 : 0);

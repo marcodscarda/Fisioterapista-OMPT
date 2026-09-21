@@ -3,6 +3,7 @@
  * Server statico minimale (zero dipendenze) per avviare il gestionale in locale.
  *
  * Uso:  node server.js [porta] [--no-open] [--rete] [--codice=xxxx]
+ *                       [--backup=/percorso/cartella]
  *
  * Senza --rete l'ascolto e' limitato a 127.0.0.1: i dati clinici non sono
  * raggiungibili dagli altri dispositivi della rete.
@@ -10,12 +11,13 @@
  * stessa rete Wi-Fi, protetto da un codice di accesso generato a ogni avvio.
  */
 import { createServer } from 'node:http';
-import { readFile, stat } from 'node:fs/promises';
+import { readFile, writeFile, stat, mkdir, readdir, unlink } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
-import { networkInterfaces } from 'node:os';
+import { networkInterfaces, homedir } from 'node:os';
 import { extname, join, normalize, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { statSync } from 'node:fs';
 
 const ROOT = resolve(fileURLToPath(new URL('.', import.meta.url)));
 
@@ -27,6 +29,36 @@ const VERSIONE = JSON.parse(
 ).version || '0.0.0';
 const VERSIONE_BREVE = VERSIONE.split('.').slice(0, 2).join('.');
 const argomenti = process.argv.slice(2);
+
+/* ------------------------------------------------------------------ */
+/* Cartella dei backup automatici                                      */
+/* ------------------------------------------------------------------ */
+/*
+   Il browser da solo non puo' scrivere su disco senza chiedere ogni volta,
+   e l'API che lo permetterebbe non c'e' su tutti i browser. Il server, che
+   gira comunque sulla stessa macchina, puo': l'applicazione gli manda il
+   backup e lui lo salva in una cartella vicino ai documenti dell'utente.
+   Fuori dalla cartella del programma, cosi' un aggiornamento o uno
+   spostamento non se li porta via.
+*/
+const CARTELLA_BACKUP = (() => {
+  const richiesta = argomenti.find(a => a.startsWith('--backup='))?.slice(9);
+  if (richiesta) return resolve(richiesta);
+  const casa = homedir();
+  for (const documenti of ['Documents', 'Documenti']) {
+    try {
+      if (statSync(join(casa, documenti)).isDirectory()) {
+        return join(casa, documenti, 'Backup Gestionale OMPT');
+      }
+    } catch { /* cartella assente: si prova la successiva */ }
+  }
+  return join(casa, 'Backup Gestionale OMPT');
+})();
+
+/** Quante copie conservare: oltre, si cancella la piu' vecchia. */
+const BACKUP_DA_TENERE = 30;
+/** Un backup piu' grande di cosi' non viene accettato: qualcosa non torna. */
+const BACKUP_MAX_BYTE = 64 * 1024 * 1024;
 const APRI_BROWSER = !argomenti.includes('--no-open');
 const PORTA_INIZIALE = Number(argomenti.find(a => /^\d+$/.test(a)) || process.env.PORT || 4321);
 // Quante porte provare in successione se quella scelta e' gia' occupata.
@@ -95,6 +127,67 @@ const TIPI = {
   '.md': 'text/plain; charset=utf-8'
 };
 
+/** Legge il corpo della richiesta, rifiutando quelli oltre misura. */
+function corpoRichiesta(req) {
+  return new Promise((risolvi, rifiuta) => {
+    const pezzi = [];
+    let byte = 0;
+    req.on('data', (c) => {
+      byte += c.length;
+      if (byte > BACKUP_MAX_BYTE) {
+        rifiuta(new Error('Backup troppo grande: oltre ' + Math.round(BACKUP_MAX_BYTE / 1048576) + ' MB.'));
+        req.destroy();
+        return;
+      }
+      pezzi.push(c);
+    });
+    req.on('end', () => risolvi(Buffer.concat(pezzi).toString('utf8')));
+    req.on('error', rifiuta);
+  });
+}
+
+/** Elenco dei backup gia' presenti, dal piu' recente. */
+async function statoBackup() {
+  try {
+    const file = (await readdir(CARTELLA_BACKUP))
+      .filter(n => /^backup-gestionale-ompt-.*\.json$/.test(n));
+    const dettagli = [];
+    for (const nome of file) {
+      const info = await stat(join(CARTELLA_BACKUP, nome));
+      dettagli.push({ nome, byte: info.size, modificatoIl: info.mtime.toISOString() });
+    }
+    dettagli.sort((a, b) => b.modificatoIl.localeCompare(a.modificatoIl));
+    return { cartella: CARTELLA_BACKUP, daTenere: BACKUP_DA_TENERE, file: dettagli };
+  } catch {
+    // La cartella non esiste ancora: verra' creata al primo salvataggio.
+    return { cartella: CARTELLA_BACKUP, daTenere: BACKUP_DA_TENERE, file: [] };
+  }
+}
+
+/**
+ * Scrive il backup e fa spazio cancellando i piu' vecchi.
+ * Il contenuto viene solo verificato come JSON: il suo significato lo
+ * conosce l'applicazione, non il server.
+ */
+async function salvaBackup(testo) {
+  if (!testo) throw new Error('Backup vuoto.');
+  try { JSON.parse(testo); } catch { throw new Error('Il backup non e\' un JSON valido.'); }
+
+  await mkdir(CARTELLA_BACKUP, { recursive: true });
+  const adesso = new Date();
+  const giorno = adesso.toLocaleDateString('sv-SE');
+  const ora = adesso.toTimeString().slice(0, 5).replace(':', '');
+  const nome = `backup-gestionale-ompt-${giorno}-${ora}.json`;
+  const percorso = join(CARTELLA_BACKUP, nome);
+  await writeFile(percorso, testo, 'utf8');
+
+  const stato = await statoBackup();
+  for (const vecchio of stato.file.slice(BACKUP_DA_TENERE)) {
+    try { await unlink(join(CARTELLA_BACKUP, vecchio.nome)); } catch { /* gia' rimosso */ }
+  }
+  return { ok: true, nome, percorso, cartella: CARTELLA_BACKUP, byte: Buffer.byteLength(testo) };
+}
+
 const server = createServer(async (req, res) => {
   try {
     // Le barre iniziali vanno collassate prima di costruire l'URL: un target
@@ -125,6 +218,28 @@ const server = createServer(async (req, res) => {
         }).end();
         return;
       }
+    }
+
+    /* ---- Backup su disco ---------------------------------------- */
+    if (url.pathname === '/api/backup') {
+      if (req.method === 'GET') {
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' })
+          .end(JSON.stringify(await statoBackup()));
+        return;
+      }
+      if (req.method === 'POST') {
+        try {
+          const esito = await salvaBackup(await corpoRichiesta(req));
+          res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' })
+            .end(JSON.stringify(esito));
+        } catch (err) {
+          res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' })
+            .end(JSON.stringify({ errore: err.message }));
+        }
+        return;
+      }
+      res.writeHead(405).end('Metodo non consentito');
+      return;
     }
 
     // Firma dell'applicazione: serve a un secondo avvio per capire che la

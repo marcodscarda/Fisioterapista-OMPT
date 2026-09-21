@@ -15,6 +15,9 @@ import { vistaImpostazioni } from './views/impostazioni.js';
 import { vistaImporta } from './views/importa.js';
 import { vistaEsercizi } from './views/esercizi.js';
 import { VERSIONE } from './versione.js';
+import { backupAutomatico, ultimoBackupAutomatico } from './backup.js';
+import { attivaRicerca } from './views/ricerca.js';
+import { assicuraCatalogo } from './views/esercizi.js';
 
 const vista = () => document.getElementById('view');
 
@@ -110,22 +113,42 @@ async function avvia() {
     toast('Backup scaricato.', 'ok');
   });
 
-  promemoriaBackup();
+  attivaRicerca();
+  // La libreria va riempita all'avvio e non alla prima apertura della sua
+  // pagina: altrimenti la ricerca globale non troverebbe gli esercizi finche'
+  // non si passa di li'.
+  assicuraCatalogo().catch(() => { /* la pagina Esercizi ritentera' */ });
+  avviaBackup(imp);
   S.avviaRouter(render);
 }
 
-/** Ricorda di eseguire un backup se l'ultimo risale a piu' di una settimana fa. */
-function promemoriaBackup() {
-  const KEY = 'gestionale-ompt-ultimo-backup';
+/**
+ * Backup all'avvio.
+ * Se il gestionale gira con il suo server, la copia su disco e' automatica e
+ * silenziosa. Altrimenti resta il promemoria di scaricarne una a mano, perche'
+ * senza server nessuno puo' scrivere nella cartella dei documenti.
+ */
+async function avviaBackup(imp) {
+  const KEY_MANUALE = 'gestionale-ompt-ultimo-backup';
   try {
-    const ultimo = localStorage.getItem(KEY);
-    const settimana = 7 * 86400000;
-    if (!ultimo || Date.now() - Number(ultimo) > settimana) {
+    document.getElementById('btnBackup')?.addEventListener('click', () => {
+      localStorage.setItem(KEY_MANUALE, String(Date.now()));
+    });
+  } catch { /* localStorage non disponibile */ }
+
+  const esito = await backupAutomatico(imp);
+  if (esito) {
+    setTimeout(() => toast('Copia di sicurezza salvata: ' + esito.nome, 'ok'), 1200);
+    return;
+  }
+
+  // Nessun backup automatico: si ricorda quello manuale, se e' passata una settimana.
+  if (ultimoBackupAutomatico()) return;
+  try {
+    const ultimo = localStorage.getItem(KEY_MANUALE);
+    if (!ultimo || Date.now() - Number(ultimo) > 7 * 86400000) {
       setTimeout(() => toast('Promemoria: scarica un backup dei dati (pulsante in basso a sinistra).'), 1500);
     }
-    document.getElementById('btnBackup')?.addEventListener('click', () => {
-      localStorage.setItem(KEY, String(Date.now()));
-    });
   } catch { /* localStorage non disponibile: nessun promemoria */ }
 }
 

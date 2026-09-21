@@ -1,6 +1,6 @@
 # Gestionale OMPT
 
-**Versione 1.0** — lo storico delle versioni è in [`docs/versioni.md`](docs/versioni.md).
+**Versione 1.1** — lo storico delle versioni è in [`docs/versioni.md`](docs/versioni.md).
 Il numero della versione in uso è sempre scritto sotto il marchio, in alto a sinistra.
 
 Gestionale per fisioterapista specializzato in terapia manuale: **cartella clinica secondo il
@@ -270,6 +270,29 @@ sanitaria. Dettagli e motivo per cui non c'è una sincronizzazione automatica:
 
 Dettagli e riferimenti normativi: [`docs/fatturazione.md`](docs/fatturazione.md).
 
+### Esercizi e programma domiciliare
+
+Una **libreria di esercizi** dello studio: obiettivo, posizione di partenza, esecuzione passo
+passo, punti chiave, errori comuni, respirazione, attrezzatura, dosaggio su nove campi,
+progressione, regressione, dolore ammesso e precauzioni. Con **immagini** e collegamenti a
+**video**. Parte con 22 esercizi già pronti, tutti modificabili.
+
+Dentro l'episodio di cura si compone il **programma del paziente**: si scelgono dalla libreria,
+si riordinano, si personalizza la dose campo per campo. Da lì si stampa la **scheda da
+consegnare**, con foto, descrizione, dose e link ai video.
+
+Dettagli: [`docs/esercizi.md`](docs/esercizi.md).
+
+### Ricerca, backup automatico e promemoria
+
+- **Ricerca globale** con **Ctrl/Cmd+K**: pazienti, episodi, fatture ed esercizi in una sola
+  casella.
+- **Copia automatica su disco** all'avvio, in `Documenti/Backup Gestionale OMPT`, con le ultime
+  30 copie conservate. Il file non è cifrato: quella cartella va trattata come l'archivio di carta.
+- **Episodi fermi** in Home: gli episodi aperti senza sedute da settimane e senza appuntamenti
+  in programma.
+- **Modelli di seduta**: una seduta già compilata si salva come modello e si riusa.
+
 ### Incassi
 
 Un documento può essere incassato in una o più tranche. Il registro mostra incassato per mese e per
@@ -314,8 +337,9 @@ gestionale/
 │       ├── print.js        fattura, cartella clinica, consensi da stampare
 │       ├── state.js        router a hash e stato condiviso
 │       ├── importa/       lettura CSV e importazione da altri gestionali
+│       ├── backup.js      copia automatica su disco tramite il server locale
 │       ├── ragionamento/   motore di supporto clinico: contesto, ipotesi, regole
-│       ├── schema/         schema della cartella OMPT e definizione dei PROM
+│       ├── schema/         cartella OMPT, PROM e libreria degli esercizi
 │       ├── ui/             renderer dei form, body chart, componenti
 │       └── views/          le schermate
 ├── Crea icona sul desktop.command / .bat   crea l'icona sulla Scrivania

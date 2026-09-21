@@ -416,3 +416,30 @@ details.sec .sec-body { padding: 4px 16px 14px; border-top: 1px solid var(--bord
 }
 .scelta-riga:last-child { border-bottom: 0; }
 .scelta-riga.presente { opacity: .62; }
+
+/* ---------- Ricerca globale ---------- */
+.btn-cerca { color: var(--text-soft); gap: 8px; }
+.btn-cerca kbd {
+  font: inherit; font-size: .72rem; color: var(--text-faint);
+  border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px;
+  background: var(--surface-2);
+}
+.ric-input {
+  width: 100%; font-size: 1.05rem; padding: 10px 12px;
+  border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+  background: var(--surface); color: var(--text);
+}
+.ric-risultati { margin-top: 10px; max-height: 56vh; overflow-y: auto; }
+.ric-voce {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 9px 10px; border: 0; border-radius: var(--radius-sm);
+  background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer;
+}
+.ric-voce:hover, .ric-voce.attiva { background: var(--surface-3); }
+.ric-voce.attiva { outline: 2px solid var(--accent); outline-offset: -2px; }
+.ric-voce.spento { opacity: .55; }
+.ric-icona { flex: 0 0 24px; text-align: center; }
+.ric-testo { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.ric-testo strong, .ric-testo span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 720px) { .solo-desktop { display: none; } }
+.ant-grafici { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
