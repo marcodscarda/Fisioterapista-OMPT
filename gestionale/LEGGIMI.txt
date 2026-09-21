@@ -1,0 +1,113 @@
+GESTIONALE OMPT — COME SI APRE
+==============================
+
+1) Installa Node.js (una volta sola):  https://nodejs.org/it/download
+   Scegli la versione LTS e vai avanti-avanti.
+
+2) Fai doppio clic su:
+       Avvia gestionale.command     se hai un Mac
+       Avvia gestionale.bat         se hai Windows
+
+   Si apre una finestra con scritto "Gestionale OMPT avviato" e il
+   gestionale compare da solo nel browser.
+
+   LASCIA QUELLA FINESTRA APERTA mentre lavori: e' il programma che gira.
+   Per chiudere tutto, chiudi la finestra.
+
+
+3) L'ICONA SULLA SCRIVANIA
+
+   SU MAC non devi fare niente: al primo avvio, nella finestra nera,
+   compare la domanda
+
+       Vuoi l'icona "Gestionale OMPT" sulla Scrivania?
+
+   Premi  s  e l'icona compare. Te lo chiede una volta sola.
+
+   SU WINDOWS fai doppio clic su "Crea icona sul desktop.bat".
+
+   Da li' in poi basta un doppio clic sull'icona: su Mac si apre
+   direttamente, senza nessuna finestra nera. Per chiuderlo:
+   selezionalo e premi Cmd+Q.
+
+   L'icona punta sempre a questa cartella, quindi resta valida anche
+   dopo gli aggiornamenti. Va rifatta solo se sposti la cartella:
+   in quel caso usa "Crea icona sul desktop.command".
+
+
+SE IL MAC BLOCCA ANCHE "Crea icona sul desktop.command"
+-------------------------------------------------------
+Stesso blocco di prima, su un file diverso. Clicca ANNULLA.
+
+Non ti serve quel file: avvia il gestionale con
+"Avvia gestionale.command" e rispondi  s  alla domanda.
+
+Se invece vuoi togliere il blocco a tutta la cartella in un colpo
+solo: apri il Terminale, scrivi
+
+    xattr -d -r com.apple.quarantine
+
+con uno SPAZIO finale, poi trascina dentro la finestra la cartella
+"gestionale" e premi Invio.
+
+
+SE IL MAC DICE CHE NON PUO' APRIRLO
+-----------------------------------
+Compare un avviso con i pulsanti "Sposta nel Cestino" e "Annulla".
+
+  --> Clicca ANNULLA. Non spostare nulla nel Cestino.
+
+Non c'e' niente di sbagliato nel file: macOS blocca per principio gli
+script scaricati da internet. Hai due strade.
+
+
+STRADA A - la piu' rapida (non serve password, 4 passaggi)
+
+  1. Apri l'app "Terminale"
+     (Cmd+Spazio, scrivi "terminale", Invio)
+  2. Scrivi queste cinque lettere seguite da UNO SPAZIO:   bash
+  3. Trascina dentro la finestra del Terminale il file
+     "Avvia gestionale.command"
+     (il percorso si scrive da solo)
+  4. Premi Invio
+
+  Il gestionale parte. Lascia aperta la finestra del Terminale
+  mentre lavori.
+
+  Le volte successive, nel Terminale premi la freccia SU per
+  richiamare il comando e poi Invio.
+
+
+STRADA B - sblocca il doppio clic una volta per sempre
+
+  1. Menu mela in alto a sinistra  ->  Impostazioni di Sistema
+  2. Privacy e sicurezza  ->  scorri fino in fondo, sezione "Sicurezza"
+  3. C'e' scritto che "Avvia gestionale.command" e' stato bloccato,
+     con accanto il pulsante APRI COMUNQUE: cliccalo e conferma con
+     la password o il Touch ID.
+  4. Torna sul file, doppio clic di nuovo, e stavolta clicca APRI.
+
+  Da quel momento il doppio clic funziona sempre.
+
+  Se al punto 3 non vedi quella riga: compare solo DOPO un tentativo
+  di apertura e resta per circa un'ora. Rifai il doppio clic sul file,
+  premi Annulla, e torna subito in Privacy e sicurezza.
+
+  Su Mac piu' vecchi (Monterey o precedenti) basta il clic destro sul
+  file -> Apri -> Apri.
+
+
+SE WINDOWS MOSTRA "WINDOWS HA PROTETTO IL PC"
+---------------------------------------------
+Clicca "Ulteriori informazioni" e poi "Esegui comunque".
+Anche qui solo la prima volta.
+
+
+ATTENZIONE
+----------
+Non aprire index.html con un doppio clic: il browser lo blocca e la
+pagina resterebbe bianca. Usa sempre l'avviatore qui sopra.
+
+I dati restano su questo computer. Fai un backup con regolarita' dal
+pulsante "Backup" in basso a sinistra e conservalo in un posto sicuro:
+contiene dati sanitari.
