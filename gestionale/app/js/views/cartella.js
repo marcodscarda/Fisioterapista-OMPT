@@ -13,6 +13,7 @@ import * as S from '../state.js';
 import { stampaCartella } from '../print.js';
 import { vistaRagionamento } from './ragionamento.js';
 import { vistaAnteprima } from './anteprima.js';
+import { vistaProgramma } from './programma.js';
 
 export async function vistaCartella(root, { id, tab = 'anteprima' }) {
   const ep = await db.byId('episodi', id);
@@ -74,6 +75,7 @@ export async function vistaCartella(root, { id, tab = 'anteprima' }) {
   ...parti,
   { key: 'sedute', label: 'Sedute', badge: sedute.length },
   { key: 'proms', label: 'Questionari', badge: ep.proms.length },
+  { key: 'esercizi', label: 'Esercizi', badge: ep.programma?.voci?.length || null },
   { key: 'supporto', label: '◈ Supporto' }],
     tab, (k) => S.vai(`/cartella/${id}/${k}`));
 
@@ -101,6 +103,8 @@ export async function vistaCartella(root, { id, tab = 'anteprima' }) {
       }));
   } else if (tab === 'sedute') {
     renderSedute(corpo, ep, paz, sedute, imp);
+  } else if (tab === 'esercizi') {
+    await vistaProgramma(corpo, ep, paz, modificato);
   } else if (tab === 'supporto') {
     vistaRagionamento(corpo, ep, paz, salva);
   } else {

@@ -385,3 +385,34 @@ details.sec .sec-body { padding: 4px 16px 14px; border-top: 1px solid var(--bord
 .ant-seduta:first-of-type { border-top: 0; padding-top: 0; }
 .ant-seduta-testa { display: flex; align-items: baseline; gap: 10px; margin-bottom: 6px; flex-wrap: wrap; }
 .tbl-mini th, .tbl-mini td { padding: 5px 8px; font-size: .85rem; }
+
+/* ---------- Esercizi: libreria, scheda e programma ---------- */
+.es-riga { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.es-mini {
+  width: 44px; height: 44px; flex: 0 0 44px;
+  object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--border);
+  background: var(--surface-3);
+  display: inline-flex; align-items: center; justify-content: center; font-size: 1.1rem;
+}
+.es-mini-vuota { color: var(--text-faint); }
+.es-galleria { display: flex; flex-wrap: wrap; gap: 12px; }
+.es-figura {
+  margin: 0; flex: 0 1 240px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 8px; background: var(--surface-2);
+}
+.es-figura img { width: 100%; height: auto; border-radius: var(--radius-sm); display: block; }
+.es-figura figcaption { font-size: .8rem; color: var(--text-soft); margin-top: 6px; text-align: center; }
+.es-figura input { margin-top: 6px; }
+.es-blocco { min-width: 0; }
+
+.prog-voce { margin-bottom: 12px; }
+.prog-voce .card-head { margin-bottom: 8px; }
+
+.scelta-esercizi { max-height: 52vh; overflow-y: auto; border: 1px solid var(--border); border-radius: var(--radius-sm); }
+.scelta-riga {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px; border-bottom: 1px solid var(--border);
+}
+.scelta-riga:last-child { border-bottom: 0; }
+.scelta-riga.presente { opacity: .62; }

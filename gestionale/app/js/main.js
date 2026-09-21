@@ -13,6 +13,7 @@ import { vistaIncassi } from './views/incassi.js';
 import { vistaAgenda } from './views/agenda.js';
 import { vistaImpostazioni } from './views/impostazioni.js';
 import { vistaImporta } from './views/importa.js';
+import { vistaEsercizi } from './views/esercizi.js';
 import { VERSIONE } from './versione.js';
 
 const vista = () => document.getElementById('view');
@@ -32,6 +33,8 @@ S.rotta('/fattura/nuova/:pazienteId', async ({ params }) => {
 });
 S.rotta('/fattura/:id', async ({ params }) => { briciole('Fatture', 'Documento'); await vistaFattura(vista(), params); });
 S.rotta('/incassi', async () => { briciole('Incassi'); await vistaIncassi(vista()); });
+S.rotta('/esercizi', async () => { briciole('Esercizi'); await vistaEsercizi(vista(), {}); });
+S.rotta('/esercizi/:id', async ({ params }) => { briciole('Esercizi', 'Scheda'); await vistaEsercizi(vista(), params); });
 S.rotta('/importa', async () => { briciole('Impostazioni', 'Importa dati'); await vistaImporta(vista()); });
 S.rotta('/impostazioni', async () => { briciole('Impostazioni'); await vistaImpostazioni(vista(), {}); });
 S.rotta('/impostazioni/:tab', async ({ params }) => { briciole('Impostazioni'); await vistaImpostazioni(vista(), params); });

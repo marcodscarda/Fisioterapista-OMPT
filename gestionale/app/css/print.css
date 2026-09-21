@@ -87,3 +87,26 @@
 /* Anteprima a schermo del documento stampabile */
 .print-preview { background: #fff; color: #000; padding: 14mm; border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); overflow-x: auto; }
 .print-preview .doc { max-width: none; }
+
+/* ---------- Esercizi: scheda e programma per il paziente ---------- */
+:is(.print-root, .print-preview) .ex {
+  border: .6pt solid #999; border-radius: 2mm;
+  padding: 3mm 3.5mm; margin-bottom: 3.5mm;
+}
+:is(.print-root, .print-preview) .ex-nome { margin: 0 0 1mm; font-size: 1.12em; }
+:is(.print-root, .print-preview) .ex-obiettivo { font-style: italic; margin-bottom: 2mm; }
+:is(.print-root, .print-preview) .ex-foto { display: flex; gap: 3mm; margin-bottom: 2.5mm; }
+:is(.print-root, .print-preview) .ex-foto figure { margin: 0; flex: 1; max-width: 48%; }
+:is(.print-root, .print-preview) .ex-foto img { width: 100%; height: auto; border: .4pt solid #bbb; }
+:is(.print-root, .print-preview) .ex-foto figcaption { font-size: .78em; text-align: center; margin-top: .5mm; }
+:is(.print-root, .print-preview) .ex-riga { display: flex; gap: 2.5mm; margin-bottom: 1.2mm; align-items: baseline; }
+:is(.print-root, .print-preview) .ex-lbl {
+  flex: 0 0 26mm; font-weight: 700; font-size: .84em;
+  text-transform: uppercase; letter-spacing: .03em;
+}
+:is(.print-root, .print-preview) .ex-ul { margin: 0; padding-left: 4mm; }
+:is(.print-root, .print-preview) .ex-dose { margin-top: 1.8mm; padding-top: 1.2mm; border-top: .4pt dotted #999; }
+:is(.print-root, .print-preview) .ex-url { word-break: break-all; font-size: .88em; }
+:is(.print-root, .print-preview) .note-box {
+  border-left: 1.2pt solid #333; padding: 1.5mm 0 1.5mm 3mm; margin-bottom: 3.5mm;
+}

@@ -10,5 +10,8 @@
     "test:e2e": "node test/e2e.mjs",
     "serve": "node server.js"
   },
-  "license": "UNLICENSED"
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "playwright": "^1.63.0"
+  }
 }

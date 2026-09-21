@@ -6,16 +6,24 @@
    gonfierebbe l'archivio e ogni backup.
    ============================================================ */
 
-/** Larghezza massima del logo memorizzato: sufficiente per la stampa a 300 dpi su ~5 cm. */
-const LARGHEZZA_MAX = 600;
-const ALTEZZA_MAX = 400;
-const PESO_MAX_KB = 300;
+/**
+ * Misure per le foto degli esercizi: devono restare leggibili sulla scheda
+ * stampata e sullo schermo, ma non possono gonfiare l'archivio — ogni foto
+ * finisce dentro ogni backup.
+ */
+export const MISURE_ESERCIZIO = { larghezzaMax: 900, altezzaMax: 900, pesoMaxKb: 220 };
 
 /**
  * Legge un file immagine e restituisce un data URL ridimensionato.
+ * @param {File} file
+ * @param {object} [misure]  { larghezzaMax, altezzaMax, pesoMaxKb }
  * @returns {Promise<{dataUrl:string, larghezza:number, altezza:number, kb:number}>}
  */
-export function caricaImmagine(file) {
+export function caricaImmagine(file, misure = {}) {
+  // Valori predefiniti: il logo, che va stampato piccolo ma nitido.
+  const LARGHEZZA_MAX = misure.larghezzaMax || 600;
+  const ALTEZZA_MAX = misure.altezzaMax || 400;
+  const PESO_MAX_KB = misure.pesoMaxKb || 300;
   return new Promise((risolvi, rifiuta) => {
     if (!file) { rifiuta(new Error('Nessun file selezionato.')); return; }
     if (!/^image\//.test(file.type)) {

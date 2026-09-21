@@ -5,7 +5,7 @@
 import { uid, todayISO } from './util.js';
 
 const DB_NAME = 'gestionale-ompt';
-const DB_VERSION = 2;   // 2: aggiunge l'archivio degli appuntamenti
+const DB_VERSION = 3;   // 2: appuntamenti · 3: esercizi e modelli di seduta
 
 /** store -> indici da creare */
 const STORES = {
@@ -16,6 +16,8 @@ const STORES = {
   appuntamenti: ['pazienteId', 'data'],
   fatture: ['pazienteId', 'anno', 'data', 'numeroCompleto'],
   incassi: ['fatturaId', 'data'],
+  esercizi: ['nome', 'regione', 'categoria'],     // libreria degli esercizi
+  modelliSeduta: ['nome'],                        // seduta tipo, da riusare
   contatori: []                                   // id: 'fatture-2026' -> { ultimo }
 };
 

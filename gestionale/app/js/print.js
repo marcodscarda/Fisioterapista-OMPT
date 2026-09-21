@@ -5,6 +5,7 @@
 import { h, clear, fmtDate, fmtDateLong, fmtEUR, fullName, nz, age, isEmptyVal, toast } from './util.js';
 import { calcolaTotali, numeroCompleto, noteFattura } from './fatture.js';
 import { CARTELLA, SEDUTA } from './schema/ompt.js';
+import { doseInRiga } from './schema/esercizi.js';
 import { PROMS, calcolaProm } from './schema/proms.js';
 
 /* ------------------------------------------------------------------ */
@@ -474,3 +475,110 @@ export const MODULI = Object.entries(TITOLI).map(([k, v]) => ({ key: k, label: v
 /** Anteprima a schermo di un documento gia' costruito. */
 export const anteprima = (nodo) => h('div', { class: 'print-preview' }, nodo);
 export { stampa as inviaInStampa };
+
+/* ------------------------------------------------------------------ */
+/* ESERCIZI: scheda singola e programma per il paziente                */
+/* ------------------------------------------------------------------ */
+
+/** Blocco di un esercizio, riusato dalla scheda singola e dal programma. */
+function bloccoEsercizio(es, dose, note, numero) {
+  const riga = (etichetta, valore) => valore
+    ? h('div', { class: 'ex-riga' }, h('span', { class: 'ex-lbl' }, etichetta), h('span', valore))
+    : null;
+  const punti = (etichetta, voci) => voci?.length
+    ? h('div', { class: 'ex-riga' },
+      h('span', { class: 'ex-lbl' }, etichetta),
+      h('ul', { class: 'ex-ul' }, voci.map(v => h('li', v))))
+    : null;
+
+  const foto = (es.immagini || []).slice(0, 2);
+  return h('div', { class: 'ex avoid-break' },
+    h('h3', { class: 'ex-nome' }, (numero ? numero + '. ' : '') + es.nome),
+    es.obiettivo ? h('div', { class: 'ex-obiettivo' }, es.obiettivo) : null,
+    foto.length
+      ? h('div', { class: 'ex-foto' }, foto.map(im => h('figure', null,
+        h('img', { src: im.dataUrl, alt: '' }),
+        im.didascalia ? h('figcaption', im.didascalia) : null)))
+      : null,
+    h('div', { class: 'ex-corpo' },
+      riga('Posizione', es.posizione),
+      riga('Esecuzione', es.esecuzione),
+      riga('Respirazione', es.respirazione),
+      punti('Punti chiave', es.puntiChiave),
+      punti('Errori da evitare', es.erroriComuni),
+      riga('Attrezzatura', (es.attrezzatura || []).join(', ')),
+      h('div', { class: 'ex-riga ex-dose' },
+        h('span', { class: 'ex-lbl' }, 'Quanto'),
+        h('span', h('strong', doseInRiga(dose) || 'da concordare'))),
+      riga('Se fa male', es.doloreAmmesso),
+      riga('Attenzione', es.precauzioni),
+      riga('Nota per te', note),
+      (es.video || []).length
+        ? h('div', { class: 'ex-riga' },
+          h('span', { class: 'ex-lbl' }, 'Video'),
+          h('span', es.video.map(v => h('div', { class: 'ex-url' }, (v.titolo ? v.titolo + ': ' : '') + v.url))))
+        : null));
+}
+
+/** Scheda di un singolo esercizio, per la libreria. */
+export function documentoEsercizio(es, imp = {}) {
+  const doc = h('div', { class: 'doc' });
+  doc.appendChild(h('div', { class: 'rec-title' },
+    h('h1', es.nome),
+    h('div', { class: 'sub' }, [es.regione, es.categoria].filter(Boolean).join(' · '))));
+  doc.appendChild(bloccoEsercizio(es, es.dose, ''));
+  if (es.progressione || es.regressione) {
+    doc.appendChild(h('div', { class: 'ex avoid-break' },
+      es.progressione ? h('div', { class: 'ex-riga' }, h('span', { class: 'ex-lbl' }, 'Progressione'), h('span', es.progressione)) : null,
+      es.regressione ? h('div', { class: 'ex-riga' }, h('span', { class: 'ex-lbl' }, 'Regressione'), h('span', es.regressione)) : null));
+  }
+  return doc;
+}
+
+export function stampaEsercizio(es, imp = {}) { stampa(documentoEsercizio(es, imp)); }
+
+/**
+ * Programma domiciliare da consegnare al paziente.
+ * @param {object} programma  { voci:[{esercizio, dose, note}], note, aggiornatoIl }
+ */
+export function documentoProgramma(programma, paziente, imp, episodio) {
+  const emittente = intestazioneStudio(imp);
+  const doc = h('div', { class: 'doc' });
+
+  doc.appendChild(h('div', { class: 'rec-title' },
+    imp.logoInDocumentiClinici && imp.logo
+      ? h('div', { style: { display: 'flex', justifyContent: 'center', marginBottom: '2mm' } }, logoStudio(imp))
+      : null,
+    h('h1', 'Programma di esercizi'),
+    h('div', { class: 'sub' }, emittente.nome + (imp.qualifica ? ' — ' + imp.qualifica : ''))));
+
+  doc.appendChild(h('dl', { class: 'kv' },
+    h('dt', 'Per'), h('dd', fullName(paziente) || '—'),
+    h('dt', 'Data'), h('dd', fmtDateLong(programma?.aggiornatoIl || new Date().toLocaleDateString('sv-SE'))),
+    episodio?.titolo ? h('dt', 'Riferimento') : null,
+    episodio?.titolo ? h('dd', episodio.titolo) : null));
+
+  if (programma?.note) {
+    doc.appendChild(h('div', { class: 'note-box' }, h('p', { class: 'mb0' }, programma.note)));
+  }
+
+  const voci = programma?.voci || [];
+  if (!voci.length) {
+    doc.appendChild(h('p', 'Nessun esercizio nel programma.'));
+  } else {
+    voci.forEach((v, i) => doc.appendChild(bloccoEsercizio(v.esercizio, v.dose, v.note, i + 1)));
+  }
+
+  doc.appendChild(h('div', { class: 'footer-note' },
+    'Esegui gli esercizi come sono descritti: se qualcosa non torna, o se i sintomi peggiorano e non rientrano ' +
+    'entro 24 ore, sospendi e contattami. Questo programma è stato preparato per te e non è trasferibile ad altri.'));
+
+  doc.appendChild(h('div', { class: 'sign-row sign-row-single avoid-break' },
+    h('div', { class: 'sign-col' },
+      imp.firmaInDocumentiClinici ? firmaStudio(imp) : null,
+      h('div', { class: 'sign' }, 'Firma del fisioterapista'))));
+
+  return doc;
+}
+
+export function stampaProgramma(...args) { stampa(documentoProgramma(...args)); }
