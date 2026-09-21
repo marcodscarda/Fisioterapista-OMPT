@@ -443,6 +443,168 @@ await step('importazione da CSV: riconoscimento, anteprima e scrittura', async (
   if (prossimo !== 8) throw new Error('il progressivo è stato alterato dall’import: ' + prossimo);
 });
 
+await step('libreria esercizi: catalogo di partenza e filtri', async () => {
+  await page.goto(BASE + '#/esercizi', { waitUntil: 'networkidle' });
+  await page.waitForSelector('.tbl tbody tr', { timeout: 5000 });
+  const tutte = await page.locator('.tbl tbody tr').count();
+  if (tutte < 20) throw new Error('catalogo di partenza troppo corto: ' + tutte);
+
+  // Il filtro per regione e la ricerca libera devono restringere l'elenco.
+  await page.locator('.search-bar select').first().selectOption('Rachide lombare');
+  await page.waitForTimeout(150);
+  const lombari = await page.locator('.tbl tbody tr').count();
+  if (!(lombari > 0 && lombari < tutte)) throw new Error('filtro per regione inefficace: ' + lombari + '/' + tutte);
+
+  await page.locator('.search-bar input[type=search]').fill('bird dog');
+  await page.waitForTimeout(150);
+  const righe = await page.locator('.tbl tbody tr').allTextContents();
+  if (righe.length !== 1 || !/Bird dog/i.test(righe[0])) throw new Error('ricerca in libreria: ' + JSON.stringify(righe));
+});
+
+await step('scheda dell’esercizio con esecuzione e dose', async () => {
+  await page.click('.tbl tbody tr');
+  await page.waitForSelector('h1:has-text("Bird dog")', { timeout: 5000 });
+  const testo = await page.textContent('#view');
+  for (const atteso of ['Come si esegue', 'Dosaggio', 'Punti chiave']) {
+    if (!testo.includes(atteso)) throw new Error('manca il blocco «' + atteso + '» nella scheda');
+  }
+});
+
+await step('programma: scelta dalla libreria e dose personalizzata', async () => {
+  const idEp = await page.evaluate(async () => (await (await import('/app/js/db.js')).all('episodi'))[0].id);
+  await page.goto(BASE + '#/cartella/' + idEp + '/esercizi', { waitUntil: 'networkidle' });
+  await page.waitForSelector('h2:has-text("Programma di esercizi")', { timeout: 5000 });
+
+  await page.click('button:has-text("+ Aggiungi esercizio")');
+  await page.waitForSelector('.modal .scelta-riga', { timeout: 5000 });
+  await page.locator('.modal input[type=search]').fill('bird dog');
+  await page.waitForTimeout(150);
+  await page.locator('.modal .scelta-riga button:has-text("+ Aggiungi")').first().click();
+  await page.waitForTimeout(150);
+  // Riaggiungere lo stesso esercizio non deve essere possibile.
+  if (!await page.locator('.modal .scelta-riga:has-text("già nel programma")').count()) {
+    throw new Error('un esercizio già inserito resta riaggiungibile');
+  }
+  await page.click('.modal-foot button:has-text("Chiudi")');
+
+  await page.waitForSelector('.prog-voce', { timeout: 5000 });
+  await page.click('.prog-voce details.sec > summary');
+  // La dose di libreria compare come valore, non come segnaposto vuoto.
+  const serie = page.locator('.prog-voce .field:has(label:text-is("Serie")) input');
+  if (await serie.inputValue() !== '3') throw new Error('dose di libreria non proposta: ' + await serie.inputValue());
+
+  // Personalizzando, in archivio finisce solo ciò che si discosta dalla libreria.
+  await serie.fill('2');
+  await serie.blur();
+  await page.waitForTimeout(900);
+  const voce = await page.evaluate(async () => {
+    const db = await import('/app/js/db.js');
+    return (await db.all('episodi'))[0].programma?.voci?.[0];
+  });
+  if (voce?.dose?.serie !== '2') throw new Error('dose personalizzata non salvata: ' + JSON.stringify(voce));
+  if ('ripetizioni' in (voce.dose || {})) throw new Error('la dose uguale alla libreria non va duplicata: ' + JSON.stringify(voce.dose));
+});
+
+await step('scheda degli esercizi da consegnare al paziente', async () => {
+  await page.fill('.card:has(h2:text-is("Programma di esercizi")) textarea', 'Tre volte a settimana, senza dolore oltre 3/10.');
+  await page.click('button:has-text("👁 Anteprima")');
+  await page.waitForSelector('.modal .doc', { timeout: 5000 });
+  const doc = await page.textContent('.modal .doc');
+  if (!/Bird dog/.test(doc)) throw new Error('esercizio assente dalla scheda');
+  if (!/2 × 8 per lato/.test(doc)) throw new Error('dose effettiva non stampata: ' + doc.replace(/\s+/g, ' ').slice(0, 200));
+  if (!/Rossi Mario/.test(doc)) throw new Error('intestazione senza il paziente');
+  await page.click('.modal-foot button:has-text("Chiudi")');
+});
+
+await step('modello di seduta: salvataggio e riuso', async () => {
+  const idEp = await page.evaluate(async () => (await (await import('/app/js/db.js')).all('episodi'))[0].id);
+  await page.goto(BASE + '#/cartella/' + idEp + '/sedute', { waitUntil: 'networkidle' });
+  await page.waitForSelector('.tbl tbody tr', { timeout: 5000 });
+  await page.click('.tbl tbody tr');
+  await page.waitForSelector('.modal', { timeout: 5000 });
+  await page.click('.modal-foot button:has-text("Salva come modello")');
+  await page.waitForSelector('.modal:has-text("Nome del modello")', { timeout: 5000 });
+  await page.locator('.modal:has-text("Nome del modello") input[type=text]').fill('Terapia manuale lombare');
+  await page.click('.modal:has-text("Nome del modello") .modal-foot button:has-text("Salva")');
+  await page.waitForTimeout(300);
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(200);
+
+  const prima = await page.locator('.tbl tbody tr').count();
+  await page.click('button:has-text("Da modello")');
+  await page.waitForSelector('.modal:has-text("Nuova seduta da modello")', { timeout: 5000 });
+  await page.click('.modal .scelta-riga:has-text("Terapia manuale lombare") button:has-text("Usa")');
+  await page.waitForSelector('.modal:has-text("Seduta")', { timeout: 5000 });
+  await page.waitForTimeout(600);
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(400);
+
+  const dopo = await page.evaluate(async () => {
+    const db = await import('/app/js/db.js');
+    const s = (await db.all('sedute')).sort((a, b) => (b.numero || 0) - (a.numero || 0))[0];
+    return { n: (await db.all('sedute')).length, dati: s.dati };
+  });
+  if (dopo.n !== prima + 1) throw new Error('la seduta da modello non è stata creata: ' + dopo.n);
+  if (!JSON.stringify(dopo.dati || {}).length || JSON.stringify(dopo.dati) === '{}') {
+    throw new Error('il modello non ha precompilato i campi SOAP');
+  }
+});
+
+await step('ricerca globale con Ctrl+K', async () => {
+  await page.goto(BASE, { waitUntil: 'networkidle' });
+  await page.keyboard.press('Control+k');
+  await page.waitForSelector('.ric-input', { timeout: 5000 });
+  await page.fill('.ric-input', 'rossi');
+  await page.waitForTimeout(200);
+  const voci = await page.locator('.ric-voce').allTextContents();
+  if (!voci.some(v => /Rossi Mario/.test(v))) throw new Error('il paziente non compare fra i risultati: ' + JSON.stringify(voci));
+
+  await page.fill('.ric-input', 'bird dog');
+  await page.waitForTimeout(200);
+  const eser = await page.locator('.ric-voce').allTextContents();
+  if (!eser.some(v => /Bird dog/i.test(v))) throw new Error('la libreria esercizi non è cercabile: ' + JSON.stringify(eser));
+
+  // Invio apre il primo risultato.
+  await page.keyboard.press('Enter');
+  await page.waitForSelector('h1:has-text("Bird dog")', { timeout: 5000 });
+});
+
+await step('copia automatica su disco scritta dal server', async () => {
+  await page.goto(BASE + '#/impostazioni', { waitUntil: 'networkidle' });
+  await page.click('.tabs button:has-text("Dati e backup")').catch(() => {});
+  await page.waitForSelector('h2:has-text("Copia automatica su disco")', { timeout: 5000 });
+  await page.click('button:has-text("Salva una copia adesso")');
+  // Si attende il toast di questa operazione: quello del passaggio precedente
+  // puo' essere ancora a schermo.
+  await page.waitForSelector('.toast:has-text("Copia")', { timeout: 8000 });
+  const avviso = await page.textContent('.toast:has-text("Copia")');
+  if (!/Copia salvata/.test(avviso)) throw new Error('copia non riuscita: ' + avviso);
+
+  // Il file dev'essere davvero sul disco e contenere i pazienti.
+  const esito = await page.evaluate(async () => {
+    const r = await fetch('/api/backup');
+    const j = await r.json();
+    return { n: j.file?.length || 0, ultimo: j.file?.[0]?.byte || 0 };
+  });
+  if (!esito.n) throw new Error('nessun file nella cartella di backup');
+  if (esito.ultimo < 500) throw new Error('copia sospettosamente piccola: ' + esito.ultimo + ' byte');
+});
+
+await step('episodi fermi in Home', async () => {
+  // Si arretra l'ultima seduta oltre la soglia: l'episodio dev'essere richiamato.
+  await page.evaluate(async () => {
+    const db = await import('/app/js/db.js');
+    const vecchia = new Date(Date.now() - 70 * 24 * 3600 * 1000).toISOString().slice(0, 10);
+    for (const s of await db.all('sedute')) await db.put('sedute', { ...s, data: vecchia });
+    for (const a of await db.all('appuntamenti')) await db.del('appuntamenti', a.id);
+  });
+  await page.goto(BASE, { waitUntil: 'networkidle' });
+  await page.waitForSelector('.card:has-text("Episodi fermi")', { timeout: 5000 });
+  const riquadro = await page.textContent('.card:has-text("Episodi fermi")');
+  if (!/Rossi Mario/.test(riquadro)) throw new Error('episodio fermo non elencato: ' + riquadro.replace(/\s+/g, ' ').slice(0, 160));
+  if (!/settimane/.test(riquadro)) throw new Error('manca da quanto è fermo');
+});
+
 await step('responsive a 400px', async () => {
   await page.setViewportSize({ width: 400, height: 800 });
   await page.goto(BASE + '#/incassi', { waitUntil: 'networkidle' });
