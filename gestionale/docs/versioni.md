@@ -13,6 +13,30 @@ La forma è `maiuscola.minore`:
 
 ---
 
+## 1.3 — 26 ottobre 2026
+
+**Protocollo post-operatorio: sutura della cuffia dei rotatori, fase passiva**
+- Quattro esercizi nuovi in libreria, descritti per la consegna al paziente:
+  *elevazione assistita dall'arto sano da supino*, *elevazione delle scapole da
+  seduto (spallucce)*, *esercizi pendolari di Codman*, *abduzione passiva con
+  bastone da supino*. Ognuno porta obiettivo, posizione, esecuzione passo passo,
+  punti chiave, errori comuni, dose, progressione, regressione, precauzioni,
+  dolore ammesso e, nelle note, il razionale per il terapista.
+- Gli esercizi possono appartenere a un **protocollo**: un testo libero che li
+  tiene insieme. In libreria compare una tendina per filtrarli, la ricerca li
+  trova per nome del protocollo e il protocollo si legge sulla scheda e sulla
+  stampa del singolo esercizio.
+- Le voci nuove del catalogo arrivano anche a chi ha gia' la libreria piena:
+  vengono aggiunte solo quelle entrate dopo, e quello che era stato cancellato
+  a mano non ricompare.
+
+**Attenzione clinica.** I gradi e i tempi indicati sono i piu' comuni delle
+prime settimane: valgono come punto di partenza e vanno sempre riportati al
+protocollo del chirurgo, che dipende dal tendine suturato, dalla dimensione
+della lesione e dalla tecnica.
+
+---
+
 ## 1.2 — 26 ottobre 2026
 
 **Modifiche della cartella non piu' perse cambiando scheda**

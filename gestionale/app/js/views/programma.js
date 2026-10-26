@@ -192,7 +192,7 @@ function scegliDallaLibreria(libreria, prog, fatto) {
     const filtrati = libreria
       .filter(x => !stato.regione || x.regione === stato.regione)
       .filter(x => !stato.categoria || x.categoria === stato.categoria)
-      .filter(x => matches(stato.q, x.nome, x.obiettivo, x.regione, x.categoria));
+      .filter(x => matches(stato.q, x.nome, x.obiettivo, x.regione, x.categoria, x.protocollo));
     clear(risultati);
     if (!filtrati.length) { risultati.appendChild(vuoto('Nessun esercizio con questi filtri.')); return; }
     for (const x of filtrati) {

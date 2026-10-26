@@ -7,6 +7,12 @@
 
    Struttura di un esercizio:
      nome, regione, categoria, obiettivo
+     protocollo     facoltativo: il percorso a cui appartiene, per esempio
+                    il post-operatorio di una sutura. Serve a ritrovare e
+                    consegnare insieme gli esercizi di una stessa fase.
+     da             versione in cui la voce e' entrata in catalogo. Serve a
+                    recapitarla anche a chi ha gia' la libreria piena, senza
+                    far ricomparire quello che aveva cancellato.
      posizione      posizione di partenza
      esecuzione     movimento, passo passo
      puntiChiave[]  i richiami che fanno la differenza
@@ -68,6 +74,13 @@ export function doseInRiga(dose) {
   return pezzi.join(' · ');
 }
 
+/** I protocolli presenti in una libreria, in ordine alfabetico, senza ripetizioni. */
+export function protocolliPresenti(esercizi) {
+  const nomi = new Set();
+  for (const es of esercizi || []) if (es?.protocollo) nomi.add(es.protocollo);
+  return [...nomi].sort((a, b) => a.localeCompare(b, 'it'));
+}
+
 /** Unisce la dose della libreria con quella personalizzata per il paziente. */
 export function doseEffettiva(esercizio, voce) {
   return { ...(esercizio?.dose || {}), ...(voce?.dose || {}) };
@@ -83,6 +96,11 @@ export function doseEffettiva(esercizio, voce) {
    prescrizione. Si modificano, si duplicano e si cancellano come
    qualsiasi esercizio aggiunto a mano.
 */
+/* Etichetta e cautele condivise dagli esercizi del post-operatorio di cuffia:
+   scritte una volta, cosi' restano identiche in tutta la fase. */
+export const PROTOCOLLO_CUFFIA = 'Sutura della cuffia dei rotatori — fase 1 (passiva)';
+const PRECAUZIONI_CUFFIA = 'Tempi e gradi concessi li stabilisce il chirurgo e dipendono da tendine suturato, dimensione della lesione e tecnica: questo esercizio va eseguito solo entro quei limiti. In questa fase nessuna contrazione attiva della cuffia, nessun peso portato con il braccio operato, nessun appoggio per alzarsi. Con sutura del sottoscapolare, rotazione esterna ed estensione restano limitate. Tutore rimesso subito dopo, se prescritto.';
+
 const e = (o) => ({
   attrezzatura: [], puntiChiave: [], erroriComuni: [], immagini: [], video: [],
   origine: 'catalogo', ...o
@@ -258,6 +276,126 @@ export const CATALOGO = [
     progressione: 'Passare al movimento con elastico quando l’irritabilità si riduce.',
     regressione: 'Tenuta più breve e forza minore.',
     doloreAmmesso: 'Fino a 3–4/10 durante la tenuta, purché non aumenti fra una serie e l’altra.'
+  }),
+
+  /* ---------- Spalla — sutura della cuffia dei rotatori, fase passiva ---------- */
+  /*
+     I quattro esercizi che seguono formano la fase 1 del post-operatorio: si
+     muove la spalla senza far lavorare i tendini suturati. Il razionale sta nel
+     campo Note di ciascuno. I gradi indicati sono quelli più comuni nelle
+     prime settimane: vanno sempre riportati a quanto prescritto dal chirurgo.
+  */
+  e({
+    nome: 'Elevazione assistita dall’arto sano, da supino',
+    regione: 'Spalla', categoria: 'Mobilità',
+    protocollo: PROTOCOLLO_CUFFIA, da: '1.3',
+    obiettivo: 'Recuperare l’elevazione passiva della spalla operata senza chiedere lavoro ai tendini suturati.',
+    attrezzatura: ['Lettino'],
+    posizione: 'Supino sul letto, ginocchia leggermente flesse, cuscino basso sotto la testa. Braccio operato lungo il fianco con il gomito esteso; la mano sana afferra il polso o il dorso della mano operata.',
+    esecuzione: 'La mano sana porta il braccio operato verso il soffitto e poi verso la testa, restando nel piano del corpo. Fermati al limite concesso — nelle prime settimane in genere fra 90° e 120° — oppure prima, se compare dolore. Mantieni un istante e riaccompagna giù lentamente, senza lasciar cadere il braccio.',
+    puntiChiave: [
+      'Il braccio operato resta un peso morto: il lavoro lo fa l’arto sano',
+      'Gomito esteso e pollice verso l’alto per tutta la salita',
+      'La spalla non si alza verso l’orecchio: lascia la scapola morbida',
+      'Movimento lento, nessun molleggio al punto massimo'
+    ],
+    erroriComuni: [
+      'Aiutare con i muscoli della spalla operata (l’esercizio diventa attivo e perde la sua protezione)',
+      'Spingere oltre il limite concesso per “guadagnare gradi”',
+      'Inarcare la schiena o ruotare il tronco per salire di più',
+      'Trattenere il respiro nello sforzo'
+    ],
+    respirazione: 'Espira mentre sali, inspira scendendo.',
+    dose: { serie: '2–3', ripetizioni: '10', tenuta: '2–3 secondi al punto massimo concesso', frequenza: '3–5 volte al giorno', ritmo: 'lento' },
+    progressione: 'Aumentare i gradi secondo il protocollo; poi elevazione assistita con bastone da seduto e, quando concessa, elevazione attiva assistita.',
+    regressione: 'Ampiezza ridotta a 60–90°, senza tenuta; gomito flesso per accorciare il braccio di leva.',
+    precauzioni: PRECAUZIONI_CUFFIA,
+    doloreAmmesso: 'Tensione sopportabile fino a 2–3/10 che si spegne appena torni giù. Nessun dolore acuto, nessuna sensazione di strappo: in quel caso fermati e riferiscilo.',
+    note: 'Da supino il letto sostiene il peso dell’arto e la gravità non chiede alla cuffia di stabilizzare la testa omerale: è la via più sicura per mantenere l’escursione nelle settimane in cui la sutura sta guarendo. La mobilizzazione passiva precoce, nelle lesioni piccole e medie, migliora l’escursione nei primi mesi senza aumentare in modo significativo il rischio di nuova lesione; nelle lesioni ampie prevalgono i protocolli più prudenti. Per questo il riferimento resta l’indicazione del chirurgo.'
+  }),
+  e({
+    nome: 'Elevazione delle scapole da seduto (spallucce)',
+    regione: 'Spalla', categoria: 'Mobilità',
+    protocollo: PROTOCOLLO_CUFFIA, da: '1.3',
+    obiettivo: 'Mantenere mobile il cingolo scapolare e ridurre la rigidità di difesa mentre la cuffia resta protetta.',
+    attrezzatura: ['Sedia'],
+    posizione: 'Seduto su una sedia con appoggio, piedi a terra, schiena dritta. Braccio operato sostenuto dal tutore oppure appoggiato in grembo su un cuscino.',
+    esecuzione: 'Alza entrambe le spalle verso le orecchie, mantieni un istante, poi lasciale scendere completamente. Quando il movimento è ben tollerato, aggiungi un piccolo avvicinamento delle scapole verso la colonna, sempre senza muovere il braccio.',
+    puntiChiave: [
+      'Si muove la scapola, non il braccio: l’arto operato resta appoggiato e fermo',
+      'Lasciar scendere fa parte dell’esercizio: molla del tutto, non restare a metà',
+      'Collo lungo e mandibola morbida',
+      'Movimento lento e uguale da entrambi i lati'
+    ],
+    erroriComuni: [
+      'Portare la testa in avanti mentre si alzano le spalle',
+      'Spingere con la mano operata sul cuscino per aiutarsi',
+      'Eseguire di scatto',
+      'Trattenere il respiro'
+    ],
+    respirazione: 'Inspira mentre alzi, espira lasciando scendere.',
+    dose: { serie: '2–3', ripetizioni: '10–15', tenuta: '2 secondi', frequenza: '2–3 volte al giorno', ritmo: 'lento' },
+    progressione: 'Aggiungere retrazione e poi circonduzione della scapola; quando concesso, controllo scapolare con il braccio sostenuto.',
+    regressione: 'Solo elevazione, ampiezza ridotta, senza tenuta.',
+    precauzioni: 'Se il movimento tira sulla zona della sutura o sulla ferita, ridurre l’ampiezza. Nessuna spinta e nessun sollevamento con il braccio operato. ' + PRECAUZIONI_CUFFIA,
+    doloreAmmesso: 'Nessun dolore nella spalla operata. Un lieve affaticamento al collo o fra le scapole è accettabile e passa con il riposo.',
+    note: 'Gli elevatori della scapola — trapezio superiore ed elevatore della scapola — non fanno parte della cuffia e non sono coinvolti nella sutura: si possono attivare presto senza mettere in tensione la riparazione. Serve a due cose: conservare lo scorrimento scapolo-toracico, che si perde in fretta con il tutore, e dare al paziente qualcosa da fare attivamente in una fase in cui tutto il resto è passivo, cosa che riduce il senso di impotenza e la rigidità antalgica del cingolo.'
+  }),
+  e({
+    nome: 'Esercizi pendolari di Codman',
+    regione: 'Spalla', categoria: 'Mobilità',
+    protocollo: PROTOCOLLO_CUFFIA, da: '1.3',
+    obiettivo: 'Mobilità passiva dolce e riduzione del dolore sfruttando il peso del braccio, senza attivare la cuffia.',
+    attrezzatura: ['Sedia'],
+    posizione: 'In piedi, piedi alla larghezza delle anche con un piede leggermente avanti. Busto inclinato in avanti di 30–45°, mano sana appoggiata a un tavolo o alla spalliera di una sedia. Braccio operato che pende libero, gomito esteso, tutore rimosso.',
+    esecuzione: 'Sposta il peso del corpo con le gambe e il tronco in modo da far oscillare il braccio come un pendolo: prima avanti e indietro, poi di lato, poi piccoli cerchi in un senso e nell’altro. L’oscillazione nasce dal movimento del corpo; il braccio si limita a seguire.',
+    puntiChiave: [
+      'Il braccio è completamente rilassato: se senti i muscoli della spalla lavorare, stai muovendo il braccio invece del tronco',
+      'Oscillazioni e cerchi piccoli, 20–30 cm, non ampi',
+      'Il braccio non supera l’orizzontale',
+      'Appoggio sempre stabile con la mano sana'
+    ],
+    erroriComuni: [
+      'Muovere attivamente la spalla: è l’errore più frequente e annulla lo scopo dell’esercizio',
+      'Cerchi troppo ampi, che spostano il movimento verso i gradi non concessi',
+      'Restare in piedi eretti senza inclinare il busto, così il braccio non pende',
+      'Tenere il gomito flesso'
+    ],
+    respirazione: 'Respira liberamente: non c’è una fase di sforzo.',
+    dose: { serie: '2–3', durata: '30–60 secondi per direzione', frequenza: '3–4 volte al giorno', ritmo: 'oscillazione lenta e regolare' },
+    progressione: 'Aumentare la durata, non l’ampiezza. L’ampiezza si allarga solo quando il protocollo lo prevede.',
+    regressione: 'Solo avanti e indietro, oscillazione minima; da seduto con il braccio che pende di lato.',
+    precauzioni: 'Interrompere in caso di dolore acuto, formicolio alla mano o capogiro nella posizione inclinata. Con problemi lombari rilevanti, appoggiarsi bene e ridurre l’inclinazione del busto. Nessun peso al braccio o al polso in questa fase. ' + PRECAUZIONI_CUFFIA,
+    doloreAmmesso: 'Fino a 2–3/10, in genere in riduzione durante l’esecuzione. Se il dolore aumenta oscillazione dopo oscillazione, sospendi.',
+    note: 'Il pendolo è passivo solo se il motore è il tronco: eseguito così l’attività elettrica del sovraspinato resta bassa, mentre se il paziente muove il braccio diventa un esercizio attivo e perde la sua ragione d’essere nel post-operatorio. Vale la pena farlo eseguire davanti a sé almeno una volta e correggerlo: è l’esercizio più frequentemente sbagliato di questa fase. L’oscillazione ampia, inoltre, porta la spalla in gradi che il protocollo non concede ancora.'
+  }),
+  e({
+    nome: 'Abduzione passiva con bastone, da supino',
+    regione: 'Spalla', categoria: 'Mobilità',
+    protocollo: PROTOCOLLO_CUFFIA, da: '1.3',
+    obiettivo: 'Recuperare l’abduzione passiva entro i gradi concessi, con la cuffia inattiva e il braccio sostenuto.',
+    attrezzatura: ['Bastone', 'Lettino'],
+    posizione: 'Supino sul letto, ginocchia flesse. Entrambe le mani impugnano il bastone alla larghezza delle spalle, braccia appoggiate lungo il corpo, palmo della mano operata rivolto verso l’alto.',
+    esecuzione: 'Con la mano sana spingi il bastone in modo da allontanare il braccio operato dal fianco, lasciandolo scivolare sul letto o appena sopra. Resta leggermente in avanti rispetto alla linea delle spalle, nel piano della scapola. Fermati al limite concesso — di norma 60–90° nelle prime settimane — mantieni un istante, poi riaccompagna al fianco lentamente.',
+    puntiChiave: [
+      'Il bastone è la guida, la mano sana il motore: la spalla operata non spinge',
+      'Braccio leggermente avanti, nel piano della scapola, mai dietro la linea del corpo',
+      'Nessuna rotazione esterna aggiunta, se non concessa',
+      'Fermarsi al grado stabilito anche quando sembrerebbe possibile andare oltre'
+    ],
+    erroriComuni: [
+      'Portare il braccio dietro il piano del corpo',
+      'Combinare abduzione e rotazione esterna, la posizione che mette più in tensione la riparazione',
+      'Spingere il bastone con il braccio operato',
+      'Superare i gradi concessi perché “non fa male”'
+    ],
+    respirazione: 'Espira mentre allontani il braccio dal fianco.',
+    dose: { serie: '2–3', ripetizioni: '10', tenuta: '2–3 secondi', frequenza: '3–4 volte al giorno', ritmo: 'lento' },
+    progressione: 'Aumentare i gradi secondo il protocollo; poi abduzione assistita da seduto e, quando concessa, attiva assistita.',
+    regressione: 'Ampiezza 30–60°, senza tenuta, mantenendo il braccio appoggiato al letto per tutto il movimento.',
+    precauzioni: 'Con sutura del sottoscapolare non associare rotazione esterna o estensione all’abduzione. Nessun movimento con la mano dietro la schiena. Interrompere in caso di dolore acuto o sensazione di cedimento. ' + PRECAUZIONI_CUFFIA,
+    doloreAmmesso: 'Tensione fino a 2–3/10 che rientra subito al ritorno. Nessun dolore acuto.',
+    note: 'Il bastone serve a dosare: l’arto sano percepisce la resistenza e si ferma prima, cosa che una mano appoggiata sul braccio fa con meno precisione. La posizione supina toglie alla cuffia il compito di sostenere l’arto. Restare nel piano della scapola riduce il conflitto sotto-acromiale rispetto all’abduzione pura sul piano frontale; l’associazione fra abduzione e rotazione esterna è invece la combinazione che allunga di più la riparazione del sovraspinato, e va evitata finché il protocollo non la concede.'
   }),
 
   /* ---------- Ginocchio e anca ---------- */

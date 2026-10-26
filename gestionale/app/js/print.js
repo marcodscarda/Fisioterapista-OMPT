@@ -525,7 +525,7 @@ export function documentoEsercizio(es, imp = {}) {
   const doc = h('div', { class: 'doc' });
   doc.appendChild(h('div', { class: 'rec-title' },
     h('h1', es.nome),
-    h('div', { class: 'sub' }, [es.regione, es.categoria].filter(Boolean).join(' · '))));
+    h('div', { class: 'sub' }, [es.regione, es.categoria, es.protocollo].filter(Boolean).join(' · '))));
   doc.appendChild(bloccoEsercizio(es, es.dose, ''));
   if (es.progressione || es.regressione) {
     doc.appendChild(h('div', { class: 'ex avoid-break' },

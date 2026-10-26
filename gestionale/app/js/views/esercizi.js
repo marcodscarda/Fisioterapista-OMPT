@@ -12,19 +12,58 @@ import {
 } from '../util.js';
 import { modal, conferma, tabella, badge, vuoto } from '../ui/kit.js';
 import { caricaImmagine, MISURE_ESERCIZIO } from '../ui/immagini.js';
-import { REGIONI, CATEGORIE, ATTREZZATURA, CAMPI_DOSE, CATALOGO, doseInRiga } from '../schema/esercizi.js';
+import { REGIONI, CATEGORIE, ATTREZZATURA, CAMPI_DOSE, CATALOGO, doseInRiga, protocolliPresenti } from '../schema/esercizi.js';
 import { stampaEsercizio } from '../print.js';
 import * as db from '../db.js';
 import * as S from '../state.js';
 
-/** Alla prima apertura la libreria viene riempita con il catalogo di partenza. */
-export async function assicuraCatalogo() {
+const CHIAVE_SEMINATI = 'catalogo-seminato';
+
+let _semina = null;
+
+/*
+   Una sola semina per volta. All'avvio la chiede main.js e, se si apre il
+   gestionale direttamente sulla pagina Esercizi, la chiede anche la pagina:
+   partendo insieme trovavano entrambe la libreria vuota e il catalogo finiva
+   in archivio due volte.
+*/
+export function assicuraCatalogo() {
+  if (_semina) return _semina;
+  _semina = semina();
+  _semina.then(() => { _semina = null; }, () => { _semina = null; });
+  return _semina;
+}
+
+/*
+   Alla prima apertura la libreria viene riempita con il catalogo di partenza.
+   Agli aggiornamenti successivi arrivano solo le voci nuove: si tiene nota di
+   quelle gia' proposte, cosi' un esercizio cancellato a mano non ricompare e
+   uno modificato non viene sovrascritto.
+*/
+async function semina() {
   const presenti = await db.all('esercizi');
-  if (presenti.length) return presenti;
-  for (const voce of CATALOGO) {
-    await db.put('esercizi', { ...voce, creatoIl: todayISO() });
-  }
-  return db.all('esercizi');
+  const registro = await db.byId('contatori', CHIAVE_SEMINATI);
+  const inLibreria = new Set(presenti.map(x => x.nome));
+  const proposti = new Set(registro?.nomi || []);
+
+  // Quali voci del catalogo proporre:
+  // - libreria vuota: tutte, e' la prima apertura;
+  // - libreria gia' popolata ma senza registro (aggiornamento da una versione
+  //   che non lo teneva): solo quelle entrate in catalogo dopo, riconoscibili
+  //   dal campo "da", per non far ricomparire cio' che era stato cancellato;
+  // - con il registro: tutto cio' che non e' mai stato proposto.
+  const candidate = registro
+    ? CATALOGO.filter(v => !proposti.has(v.nome))
+    : (presenti.length ? CATALOGO.filter(v => v.da) : CATALOGO);
+
+  const nuovi = candidate.filter(v => !inLibreria.has(v.nome));
+  for (const voce of nuovi) await db.put('esercizi', { ...voce, creatoIl: todayISO() });
+  await db.put('contatori', {
+    id: CHIAVE_SEMINATI,
+    nomi: [...new Set([...proposti, ...CATALOGO.map(v => v.nome)])]
+  });
+
+  return nuovi.length ? db.all('esercizi') : presenti;
 }
 
 export async function vistaEsercizi(root, { id } = {}) {
@@ -34,15 +73,17 @@ export async function vistaEsercizi(root, { id } = {}) {
 
   if (id) { schedaEsercizio(root, esercizi.find(x => x.id === id), esercizi); return; }
 
-  const stato = { q: '', regione: '', categoria: '' };
+  const stato = { q: '', regione: '', categoria: '', protocollo: '' };
+  const protocolli = protocolliPresenti(esercizi);
   const lista = h('div', { class: 'card card-tight' });
 
   function render() {
     const filtrati = esercizi
       .filter(x => !stato.regione || x.regione === stato.regione)
       .filter(x => !stato.categoria || x.categoria === stato.categoria)
+      .filter(x => !stato.protocollo || x.protocollo === stato.protocollo)
       .filter(x => matches(stato.q, x.nome, x.obiettivo, x.regione, x.categoria,
-        (x.attrezzatura || []).join(' '), x.esecuzione));
+        (x.attrezzatura || []).join(' '), x.esecuzione, x.protocollo));
 
     clear(lista).appendChild(tabella({
       colonne: [
@@ -53,7 +94,8 @@ export async function vistaEsercizi(root, { id } = {}) {
               : h('span', { class: 'es-mini es-mini-vuota' }, '🏃'),
             h('div', null,
               h('strong', x.nome),
-              h('div', { class: 'faint small' }, nz(x.obiettivo, ''))))
+              h('div', { class: 'faint small' }, nz(x.obiettivo, '')),
+              x.protocollo ? h('div', { class: 'faint small' }, '◆ ' + x.protocollo) : null))
         },
         { label: 'Regione', cell: (x) => h('span', { class: 'small' }, nz(x.regione, '—')) },
         { label: 'Tipo', cell: (x) => badge(nz(x.categoria, '—')) },
@@ -77,6 +119,11 @@ export async function vistaEsercizi(root, { id } = {}) {
         [h('option', { value: '' }, 'Tutte le regioni'), ...REGIONI.map(r => h('option', { value: r }, r))]),
       h('select', { onChange: (ev) => { stato.categoria = ev.target.value; render(); } },
         [h('option', { value: '' }, 'Tutti i tipi'), ...CATEGORIE.map(c => h('option', { value: c }, c))]),
+      // La tendina dei protocolli serve solo a chi ne ha: senza, resterebbe un comando morto.
+      protocolli.length
+        ? h('select', { onChange: (ev) => { stato.protocollo = ev.target.value; render(); } },
+          [h('option', { value: '' }, 'Tutti i protocolli'), ...protocolli.map(x => h('option', { value: x }, x))])
+        : null,
       h('input', {
         type: 'search', placeholder: 'Cerca per nome, obiettivo, attrezzo…',
         onInput: (ev) => { stato.q = ev.target.value; render(); }
@@ -113,7 +160,7 @@ function schedaEsercizio(root, es, tutti) {
         h('div', null,
           h('div', { class: 'faint small' }, h('a', { href: '#/esercizi' }, '← Libreria esercizi')),
           h('h1', { class: 'mb0' }, es.nome),
-          h('div', { class: 'faint small' }, [es.regione, es.categoria].filter(Boolean).join(' · '))),
+          h('div', { class: 'faint small' }, [es.regione, es.categoria, es.protocollo].filter(Boolean).join(' · '))),
         h('span', { class: 'spacer' }),
         h('div', { class: 'btn-row' },
           h('button', { class: 'btn btn-sm', onClick: () => stampaEsercizio(es) }, '🖨 Stampa'),
@@ -177,7 +224,7 @@ function schedaEsercizio(root, es, tutti) {
 /* Creazione e modifica                                                */
 /* ------------------------------------------------------------------ */
 const VUOTO = () => ({
-  nome: '', regione: 'Generale', categoria: 'Rinforzo', obiettivo: '',
+  nome: '', regione: 'Generale', categoria: 'Rinforzo', protocollo: '', obiettivo: '',
   posizione: '', esecuzione: '', respirazione: '',
   puntiChiave: [], erroriComuni: [], attrezzatura: [],
   dose: {}, progressione: '', regressione: '', precauzioni: '', doloreAmmesso: '',
@@ -277,6 +324,7 @@ function modificaEsercizio(originale, alSalvataggio) {
         campo('Nome *', 'nome', { w: 'w-full' }),
         scelta('Regione', 'regione', REGIONI),
         scelta('Tipo', 'categoria', CATEGORIE),
+        campo('Protocollo', 'protocollo', { w: 'w-full', hint: 'Facoltativo: il percorso a cui appartiene, per esempio “Sutura della cuffia dei rotatori — fase 1 (passiva)”. Gli esercizi con lo stesso testo si filtrano insieme.' }),
         campo('Obiettivo', 'obiettivo', { w: 'w-full', righe: 2, hint: 'A cosa serve, in una frase.' }),
         campo('Posizione di partenza', 'posizione', { w: 'w-full', righe: 2 }),
         campo('Esecuzione', 'esecuzione', { w: 'w-full', righe: 4, hint: 'Il movimento, passo passo, come lo spiegheresti a voce.' }),

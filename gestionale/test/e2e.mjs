@@ -497,6 +497,14 @@ await step('libreria esercizi: catalogo di partenza e filtri', async () => {
   await page.waitForSelector('.tbl tbody tr', { timeout: 5000 });
   const tutte = await page.locator('.tbl tbody tr').count();
   if (tutte < 20) throw new Error('catalogo di partenza troppo corto: ' + tutte);
+  // Il catalogo va seminato una volta sola, anche quando la semina all'avvio e
+  // quella della pagina partono insieme.
+  const doppioni = await page.evaluate(async () => {
+    const db = await import('/app/js/db.js');
+    const nomi = (await db.all('esercizi')).map(x => x.nome);
+    return nomi.filter((n, i) => nomi.indexOf(n) !== i);
+  });
+  if (doppioni.length) throw new Error('catalogo seminato piu\u2019 volte: ' + JSON.stringify(doppioni.slice(0, 3)));
 
   // Il filtro per regione e la ricerca libera devono restringere l'elenco.
   await page.locator('.search-bar select').first().selectOption('Rachide lombare');
@@ -517,6 +525,30 @@ await step('scheda dell’esercizio con esecuzione e dose', async () => {
   for (const atteso of ['Come si esegue', 'Dosaggio', 'Punti chiave']) {
     if (!testo.includes(atteso)) throw new Error('manca il blocco «' + atteso + '» nella scheda');
   }
+});
+
+await step('protocollo: filtro, scheda e cautele', async () => {
+  await page.goto(BASE + '#/esercizi', { waitUntil: 'networkidle' });
+  await page.reload({ waitUntil: 'networkidle' });   // azzera i filtri del passaggio precedente
+  await page.waitForSelector('.tbl tbody tr', { timeout: 5000 });
+  // La tendina dei protocolli e' l'ultima delle tre: regione, tipo, protocollo.
+  const tendine = page.locator('.search-bar select');
+  if (await tendine.count() !== 3) throw new Error('manca la tendina dei protocolli: ' + await tendine.count());
+  await tendine.nth(2).selectOption({ index: 1 });
+  await page.waitForTimeout(200);
+  const righe = await page.locator('.tbl tbody tr').allTextContents();
+  if (righe.length !== 4) throw new Error('il protocollo deve contenere 4 esercizi, trovati ' + righe.length);
+  if (!righe.some(r => /Codman/.test(r))) throw new Error('Codman non compare nel protocollo: ' + JSON.stringify(righe));
+
+  // La scheda deve riportare il protocollo e le cautele post-operatorie.
+  await page.click('.tbl tbody tr:has-text("Codman")');
+  await page.waitForSelector('h1:has-text("Codman")', { timeout: 5000 });
+  const scheda = await page.textContent('#view');
+  for (const atteso of ['Sutura della cuffia dei rotatori', 'chirurgo', 'Precauzioni', 'Dolore ammesso']) {
+    if (!scheda.includes(atteso)) throw new Error('nella scheda manca: ' + atteso);
+  }
+  // Il razionale per il terapista sta nelle note, non nella scheda del paziente.
+  if (!/sovraspinato/i.test(scheda)) throw new Error('manca il razionale nelle note');
 });
 
 await step('programma: scelta dalla libreria e dose personalizzata', async () => {
@@ -660,6 +692,56 @@ await step('responsive a 400px', async () => {
   await page.waitForTimeout(400);
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   if (overflow > 2) throw new Error('scroll orizzontale di ' + overflow + 'px');
+});
+
+/* Chi aggiorna ha gia' la libreria piena: le voci nuove del catalogo devono
+   arrivare comunque, senza duplicati e senza far ricomparire cio' che era stato
+   cancellato a mano. Contesto separato, con una libreria finta piu' vecchia. */
+await step('libreria gia’ esistente: arrivano solo gli esercizi nuovi', async () => {
+  const ctx = await browser.newContext();
+  const prep = BASE + '__prep-libreria';
+  await ctx.route(prep, r => r.fulfill({ contentType: 'text/html', body: '<!doctype html><title>prep</title>' }));
+  const p0 = await ctx.newPage();
+  await p0.goto(prep);
+  // Libreria di una versione precedente: due esercizi, nessun registro di
+  // semina, e nessuna traccia dei quattro del protocollo.
+  await p0.evaluate(async () => {
+    const stores = ['settings', 'pazienti', 'episodi', 'sedute', 'appuntamenti',
+      'fatture', 'incassi', 'esercizi', 'modelliSeduta', 'contatori'];
+    await new Promise((res, rej) => {
+      const r = indexedDB.open('gestionale-ompt', 3);
+      r.onupgradeneeded = () => {
+        for (const s of stores) if (!r.result.objectStoreNames.contains(s)) r.result.createObjectStore(s, { keyPath: 'id' });
+        const os = r.transaction.objectStore('esercizi');
+        os.put({ id: 'v1', nome: 'Bird dog', regione: 'Rachide lombare', categoria: 'Controllo motorio', esecuzione: 'x', origine: 'catalogo' });
+        os.put({ id: 'v2', nome: 'Esercizio mio', regione: 'Spalla', categoria: 'Rinforzo', esecuzione: 'x', origine: 'mio' });
+      };
+      r.onsuccess = () => { r.result.close(); res(); };
+      r.onerror = () => rej(r.error);
+    });
+  });
+  await p0.close();
+
+  const p1 = await ctx.newPage();
+  await p1.goto(BASE + '#/esercizi', { waitUntil: 'networkidle' });
+  await p1.waitForSelector('.tbl tbody tr', { timeout: 5000 });
+  const dopo = await p1.evaluate(async () => {
+    const db = await import('/app/js/db.js');
+    const tutti = await db.all('esercizi');
+    return { nomi: tutti.map(x => x.nome).sort(), quanti: tutti.length };
+  });
+  // I due di prima piu' i quattro del protocollo: nient'altro.
+  if (dopo.quanti !== 6) throw new Error('attesi 6 esercizi, trovati ' + dopo.quanti + ': ' + JSON.stringify(dopo.nomi));
+  if (!dopo.nomi.includes('Esercizio mio')) throw new Error('un esercizio proprio e stato perso');
+  if (!dopo.nomi.some(n => /Codman/.test(n))) throw new Error('il protocollo non e arrivato: ' + JSON.stringify(dopo.nomi));
+  if (dopo.nomi.some(n => /Cat-camel/.test(n))) throw new Error('sono tornate voci del vecchio catalogo mai richieste');
+
+  // Riaprendo non si duplica nulla.
+  await p1.goto(BASE + '#/esercizi', { waitUntil: 'networkidle' });
+  await p1.waitForTimeout(500);
+  const ancora = await p1.evaluate(async () => (await (await import('/app/js/db.js')).all('esercizi')).length);
+  if (ancora !== 6) throw new Error('la riapertura ha duplicato: ' + ancora);
+  await ctx.close();
 });
 
 /* Archivio lasciato da una copia piu' recente del gestionale: una volta

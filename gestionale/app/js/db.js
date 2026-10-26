@@ -18,7 +18,8 @@ const STORES = {
   incassi: ['fatturaId', 'data'],
   esercizi: ['nome', 'regione', 'categoria'],     // libreria degli esercizi
   modelliSeduta: ['nome'],                        // seduta tipo, da riusare
-  contatori: []                                   // id: 'fatture-2026' -> { ultimo }
+  contatori: []                                   // id: 'fatture-2026' -> { ultimo };
+                                                  // id: 'catalogo-seminato' -> { nomi }
 };
 
 let _db = null;

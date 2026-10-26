@@ -55,8 +55,8 @@ async function indice() {
   for (const x of esercizi) {
     voci.push({
       tipo: 'Esercizio', icona: '🏃', titolo: x.nome,
-      sotto: [x.regione, x.categoria, doseInRiga(x.dose)].filter(Boolean).join(' · '),
-      cerca: [x.nome, x.obiettivo, x.regione, x.categoria, x.esecuzione,
+      sotto: [x.regione, x.categoria, x.protocollo, doseInRiga(x.dose)].filter(Boolean).join(' · '),
+      cerca: [x.nome, x.obiettivo, x.regione, x.categoria, x.esecuzione, x.protocollo,
         (x.attrezzatura || []).join(' ')].filter(Boolean),
       rotta: '/esercizi/' + x.id
     });

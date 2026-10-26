@@ -488,6 +488,33 @@ eq('import: nessun progressivo', numeroProgressivo('ABC'), null);
   const nomi = es.CATALOGO.map(x => x.nome);
   eq('esercizi: nessun nome ripetuto', nomi.length - new Set(nomi).size, 0);
 
+  // Protocollo post-operatorio di cuffia: i quattro esercizi della fase passiva
+  // devono esserci tutti, con la stessa etichetta e le cautele compilate.
+  const cuffia = es.CATALOGO.filter(x => x.protocollo === es.PROTOCOLLO_CUFFIA);
+  eq('cuffia: i quattro esercizi della fase passiva', cuffia.map(x => x.nome).sort(), [
+    'Abduzione passiva con bastone, da supino',
+    'Elevazione assistita dall\u2019arto sano, da supino',
+    'Elevazione delle scapole da seduto (spallucce)',
+    'Esercizi pendolari di Codman'
+  ]);
+  eq('cuffia: tutti nella regione Spalla', [...new Set(cuffia.map(x => x.regione))], ['Spalla']);
+  const senzaCautele = cuffia.filter(x => !x.precauzioni || !x.doloreAmmesso || !x.note);
+  eq('cuffia: precauzioni, dolore ammesso e razionale su ogni voce', senzaCautele.map(x => x.nome), []);
+  const senzaFrequenza = cuffia.filter(x => !x.dose?.frequenza);
+  eq('cuffia: la frequenza giornaliera e indicata', senzaFrequenza.map(x => x.nome), []);
+  const senzaChirurgo = cuffia.filter(x => !/chirurgo/i.test(x.precauzioni || ''));
+  eq('cuffia: le precauzioni rimandano al protocollo del chirurgo', senzaChirurgo.map(x => x.nome), []);
+
+  // L'elenco dei protocolli serve ai filtri: senza ripetizioni e senza vuoti.
+  eq('protocolli: elencati una volta sola', es.protocolliPresenti(es.CATALOGO), [es.PROTOCOLLO_CUFFIA]);
+  eq('protocolli: niente da elencare senza protocolli', es.protocolliPresenti([{ nome: 'x' }, {}]), []);
+  eq('protocolli: ordine alfabetico', es.protocolliPresenti([{ protocollo: 'Zeta' }, { protocollo: 'Alfa' }, { protocollo: 'Zeta' }]), ['Alfa', 'Zeta']);
+
+  // Le voci entrate dopo il catalogo iniziale dichiarano da quale versione:
+  // e cosi' che arrivano a chi ha gia' la libreria piena.
+  const nuoveSenzaVersione = cuffia.filter(x => !x.da);
+  eq('cuffia: ogni voce dichiara la versione di ingresso', nuoveSenzaVersione.map(x => x.nome), []);
+
   eq('dose: riassunto leggibile',
     es.doseInRiga({ serie: '3', ripetizioni: '12', recupero: '60 secondi' }),
     '3 × 12 · recupero 60 secondi');

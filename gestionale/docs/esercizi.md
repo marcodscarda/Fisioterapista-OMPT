@@ -25,6 +25,8 @@ ce l'hanno, mentre la dose resta quella decisa per ciascuno.
 | **Progressione / regressione** | Come si rende più difficile o più facile |
 | **Dolore ammesso** | Quanto fastidio è accettabile ed entro quando deve rientrare |
 | **Precauzioni** | Quando non farlo, quando fermarsi |
+| **Protocollo** | Facoltativo: il percorso a cui appartiene, per raggrupparlo con gli altri |
+| **Note** | Il razionale, per te: non finisce sulla scheda del paziente |
 
 Il campo **dolore ammesso** vale la pena compilarlo sempre: è la domanda che il paziente
 si fa davvero a casa, e senza una risposta scritta o smette al primo fastidio o insiste
@@ -45,17 +47,52 @@ Vimeo o di una cartella condivisa. Due avvertenze pratiche:
 - i link compaiono per esteso sulla scheda stampata, così restano utilizzabili anche
   dalla carta.
 
+## Protocolli
+
+Un esercizio può dichiarare il **protocollo** a cui appartiene: un testo libero, per
+esempio *Sutura della cuffia dei rotatori — fase 1 (passiva)*. Tutti gli esercizi con lo
+stesso testo si tengono insieme:
+
+- in libreria compare una tendina per mostrare solo quelli di un protocollo;
+- la ricerca (anche quella globale, Ctrl/Cmd+K) li trova digitando il nome del protocollo;
+- il protocollo si legge sulla scheda dell'esercizio e sulla sua stampa;
+- scegliendo gli esercizi per un paziente basta cercare il protocollo per averli tutti
+  davanti.
+
+Il campo è facoltativo e si scrive a mano: scegli tu i nomi e le fasi. Conviene ripetere
+lo stesso testo identico, altrimenti i filtri vedono due protocolli diversi.
+
+### Sutura della cuffia dei rotatori — fase 1 (passiva)
+
+Il catalogo comprende i quattro esercizi di questa fase: *elevazione assistita dall'arto
+sano da supino*, *elevazione delle scapole da seduto (spallucce)*, *esercizi pendolari di
+Codman*, *abduzione passiva con bastone da supino*. L'idea comune è muovere la spalla
+senza far lavorare i tendini suturati: il motore è l'arto sano o il tronco, mai la cuffia
+operata. Nelle **note** di ciascuno c'è il razionale, che resta per te e non finisce sulla
+scheda del paziente.
+
+I gradi indicati (per esempio 90–120° di elevazione, 60–90° di abduzione) e i tempi sono
+quelli più comuni delle prime settimane: **il riferimento resta il protocollo del
+chirurgo**, che cambia con il tendine suturato, la dimensione della lesione e la tecnica.
+Con sutura del sottoscapolare, rotazione esterna ed estensione restano limitate più a
+lungo. Modifica i quattro esercizi di conseguenza: sono voci di libreria come tutte le
+altre.
+
 ## Il catalogo di partenza
 
-Alla prima apertura la libreria contiene **22 esercizi** su rachide lombare e cervicale,
-spalla, anca, ginocchio, caviglia, equilibrio e vestibolo, più alcuni generali
-(respirazione, cammino).
+Alla prima apertura la libreria contiene **26 esercizi** su rachide lombare e cervicale,
+spalla (compresi i quattro del protocollo di cuffia), anca, ginocchio, caviglia,
+equilibrio e vestibolo, più alcuni generali (respirazione, cammino).
 
 Servono a non partire dal vuoto. **Sono modificabili, duplicabili e cancellabili** come
 qualsiasi altro: la dose indicata è un punto di partenza ragionevole, non una prescrizione,
 e va adattata al singolo paziente. Se il tuo modo di spiegare un esercizio è diverso,
 riscrivilo: la libreria deve parlare come parli tu, perché quello che il paziente legge a
 casa deve suonare come quello che ha sentito in studio.
+
+Quando un aggiornamento del gestionale porta esercizi nuovi, questi arrivano anche a chi
+ha già la libreria piena: vengono aggiunte **solo le voci nuove**, e quelle che avevi
+cancellato non ricompaiono.
 
 ## Comporre il programma
 
