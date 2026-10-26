@@ -159,6 +159,14 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 .btn-sm { padding: 5px 9px; font-size: .82rem; }
 .btn-icon { padding: 6px 9px; }
 .btn-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+/* Barra degli esercizi spuntati: compare solo quando contiene qualcosa. */
+.sel-barra:empty { display: none; }
+.sel-barra:not(:empty) {
+  margin: 10px 0 0; padding: 10px 12px; gap: 10px;
+  background: var(--accent-soft); border: 1px solid var(--border);
+  border-radius: 10px; color: var(--accent-text);
+}
 .btn-row.end { justify-content: flex-end; }
 .spacer { flex: 1; }
 

@@ -13,6 +13,27 @@ La forma è `maiuscola.minore`:
 
 ---
 
+## 1.4 — 26 ottobre 2026
+
+**La scheda degli esercizi diventa un file da mandare al paziente**
+- In libreria ogni esercizio ha una **casella da spuntare**: si scelgono quelli che
+  servono — la casella in testata prende tutti quelli elencati, comoda dopo aver
+  filtrato per protocollo — e compare la barra *Scheda per il paziente*.
+- Da lì si indica il nome (facoltativo) e le indicazioni generali, poi si stampa
+  oppure si scarica il **file da inviare**. Gli esercizi seguono l'ordine in cui
+  sono stati spuntati.
+- Il file è una pagina HTML autonoma: impaginazione e immagini stanno dentro, quindi
+  si apre su qualsiasi telefono o computer anche senza collegamento e senza il
+  gestionale. Sul telefono il testo va a tutta larghezza; dal menu del browser il
+  paziente può stamparla o salvarla come PDF.
+- Lo stesso file si scarica dal programma dentro l'episodio di cura, con le dosi
+  personalizzate del paziente: pulsante *File per il paziente*, accanto alla stampa.
+
+Il file contiene indicazioni cliniche e, se compilato, il nome del paziente: va
+trattato come un documento clinico e inviato sul canale concordato con lui.
+
+---
+
 ## 1.3 — 26 ottobre 2026
 
 **Protocollo post-operatorio: sutura della cuffia dei rotatori, fase passiva**

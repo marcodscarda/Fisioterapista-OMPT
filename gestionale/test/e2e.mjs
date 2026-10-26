@@ -15,7 +15,8 @@ import { chromium } from 'playwright';
 const BASE = 'http://127.0.0.1:4321/';
 const errors = [];
 const browser = await chromium.launch();
-const page = await browser.newPage();
+const contesto = await browser.newContext({ acceptDownloads: true });
+const page = await contesto.newPage();
 page.on('console', m => { if (m.type() === 'error') errors.push('CONSOLE: ' + m.text()); });
 page.on('pageerror', e => errors.push('PAGEERROR: ' + e.message + '\n' + (e.stack||'').split('\n').slice(0,4).join('\n')));
 
@@ -549,6 +550,60 @@ await step('protocollo: filtro, scheda e cautele', async () => {
   }
   // Il razionale per il terapista sta nelle note, non nella scheda del paziente.
   if (!/sovraspinato/i.test(scheda)) throw new Error('manca il razionale nelle note');
+});
+
+await step('scheda da spuntare: selezione e file da inviare', async () => {
+  await page.goto(BASE + '#/esercizi', { waitUntil: 'networkidle' });
+  await page.reload({ waitUntil: 'networkidle' });
+  await page.waitForSelector('.tbl tbody tr', { timeout: 5000 });
+
+  // Filtrando per protocollo, la spunta in testata prende tutti quelli elencati.
+  await page.locator('.search-bar select').nth(2).selectOption({ index: 1 });
+  await page.waitForTimeout(200);
+  await page.locator('.tbl thead input[type=checkbox]').check();
+  await page.waitForTimeout(200);
+  const barra = await page.locator('.sel-barra').innerText();
+  if (!/4 esercizi scelti/.test(barra)) throw new Error('barra della selezione: ' + barra.replace(/\s+/g, ' '));
+
+  // Togliendone uno il conto scende: la spunta singola comanda.
+  await page.locator('.tbl tbody tr input[type=checkbox]').first().uncheck();
+  await page.waitForTimeout(200);
+  if (!/3 esercizi scelti/.test(await page.locator('.sel-barra').innerText())) throw new Error('la spunta singola non toglie dalla selezione');
+  await page.locator('.tbl tbody tr input[type=checkbox]').first().check();
+  await page.waitForTimeout(200);
+
+  await page.click('.sel-barra button:has-text("Scheda per il paziente")');
+  await page.waitForSelector('.modal', { timeout: 5000 });
+  await page.fill('.modal input[type=text]', 'Rossi Mario');
+  await page.fill('.modal textarea', 'Due volte al giorno, mattina e sera.');
+
+  const [scaricato] = await Promise.all([
+    page.waitForEvent('download'),
+    page.click('.modal-foot button:has-text("Scarica il file")')
+  ]);
+  const nome = scaricato.suggestedFilename();
+  if (!/^esercizi-rossi-mario-\d{4}-\d{2}-\d{2}\.html$/.test(nome)) throw new Error('nome del file: ' + nome);
+
+  // Il file deve bastare a se stesso: niente richieste esterne, tutto dentro.
+  const percorso = await scaricato.path();
+  const html = await (await import('node:fs/promises')).readFile(percorso, 'utf8');
+  for (const atteso of ['Rossi Mario', 'Due volte al giorno', 'Codman', 'spallucce', '<style', '@media print']) {
+    if (!html.includes(atteso)) throw new Error('nel file manca: ' + atteso);
+  }
+  if (/(src|href)="(?!data:)[a-z]+:/i.test(html)) throw new Error('il file dipende da risorse esterne');
+  if (/<link\b/i.test(html) || /<script\b/i.test(html)) throw new Error('il file non deve caricare fogli di stile o script');
+
+  // E deve aprirsi da solo, senza rete e senza il gestionale.
+  const fuori = await browser.newContext({ offline: true, viewport: { width: 390, height: 800 } });
+  const pagina = await fuori.newPage();
+  await pagina.goto('file://' + percorso, { waitUntil: 'load' });
+  const testo = await pagina.locator('body').innerText();
+  for (const atteso of ['Rossi Mario', 'Codman', 'Esercizi pendolari']) {
+    if (!testo.includes(atteso)) throw new Error('aprendo il file manca: ' + atteso);
+  }
+  const overflow = await pagina.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  if (overflow > 2) throw new Error('sul telefono il file scorre di lato: ' + overflow + 'px');
+  await fuori.close();
 });
 
 await step('programma: scelta dalla libreria e dose personalizzata', async () => {

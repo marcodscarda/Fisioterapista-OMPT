@@ -119,6 +119,31 @@ sintomi peggiorano e non rientrano entro 24 ore.
 **Anteprima** mostra a schermo esattamente quello che verrà stampato, prima di consumare
 carta.
 
+### Il file da mandare a casa
+
+**File per il paziente** salva la stessa scheda come pagina da inviare: una mail, un
+messaggio, quello che preferisci. È **un solo file**: impaginazione e immagini stanno
+dentro, quindi si apre su qualsiasi telefono o computer anche senza collegamento a
+internet e senza il gestionale. Sul telefono il testo va a tutta larghezza; dal menu del
+browser il paziente può stamparlo o salvarlo come PDF.
+
+Il file contiene indicazioni cliniche e, se lo compili, il nome del paziente: **è un
+documento clinico**. Mandalo sul canale che hai concordato con lui e non lasciarlo in
+cartelle condivise.
+
+### Comporre la scheda dalla libreria
+
+Non serve passare dall'episodio di cura per una scheda veloce. In **libreria** ogni riga
+ha una casella: spunta gli esercizi che ti servono — la casella in testata prende tutti
+quelli elencati, comoda dopo aver filtrato per protocollo — e in fondo compare la barra
+con *Scheda per il paziente*. Lì indichi il nome (facoltativo) e le indicazioni generali,
+poi stampi o scarichi il file.
+
+Gli esercizi compaiono **nell'ordine in cui li hai spuntati** e con la dose di libreria.
+Quando la dose va cucita sul singolo paziente, e quando vuoi che la scheda resti negli
+atti, passa invece dal programma dentro l'episodio di cura: lì la dose si personalizza
+campo per campo e il programma resta nella cartella.
+
 ## Spostare la libreria su un altro computer
 
 Dalla pagina *Esercizi*, **⬇ Esporta** produce un JSON con la sola libreria — nessun dato

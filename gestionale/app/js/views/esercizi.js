@@ -8,12 +8,12 @@
    IndexedDB renderebbe i backup ingestibili.
    ============================================================ */
 import {
-  add, h, clear, toast, nz, uid, todayISO, matches, downloadFile, pickFile, readFileText
+  add, h, clear, toast, nz, uid, todayISO, matches, fullName, downloadFile, pickFile, readFileText
 } from '../util.js';
 import { modal, conferma, tabella, badge, vuoto } from '../ui/kit.js';
 import { caricaImmagine, MISURE_ESERCIZIO } from '../ui/immagini.js';
 import { REGIONI, CATEGORIE, ATTREZZATURA, CAMPI_DOSE, CATALOGO, doseInRiga, protocolliPresenti } from '../schema/esercizi.js';
-import { stampaEsercizio } from '../print.js';
+import { stampaEsercizio, stampaProgramma, documentoProgramma, scaricaScheda } from '../print.js';
 import * as db from '../db.js';
 import * as S from '../state.js';
 
@@ -73,9 +73,30 @@ export async function vistaEsercizi(root, { id } = {}) {
 
   if (id) { schedaEsercizio(root, esercizi.find(x => x.id === id), esercizi); return; }
 
-  const stato = { q: '', regione: '', categoria: '', protocollo: '' };
+  const stato = { q: '', regione: '', categoria: '', protocollo: '', scelti: new Set() };
   const protocolli = protocolliPresenti(esercizi);
   const lista = h('div', { class: 'card card-tight' });
+  const barra = h('div', { class: 'btn-row sel-barra' });
+
+  /* La barra compare solo quando c'e' qualcosa di spuntato: finche' non si
+     scelgono esercizi non ha niente da dire. */
+  function aggiornaBarra() {
+    const scelti = [...stato.scelti];
+    clear(barra);
+    if (!scelti.length) return;
+    add(barra,
+      h('strong', scelti.length === 1 ? '1 esercizio scelto' : scelti.length + ' esercizi scelti'),
+      h('span', { class: 'faint small' }, 'nell’ordine in cui li hai spuntati'),
+      h('span', { class: 'spacer' }),
+      h('button', {
+        class: 'btn btn-sm',
+        onClick: () => { stato.scelti.clear(); render(); }
+      }, 'Deseleziona'),
+      h('button', {
+        class: 'btn btn-primary btn-sm',
+        onClick: () => componiScheda(scelti.map(id => esercizi.find(x => x.id === id)).filter(Boolean))
+      }, '📄 Scheda per il paziente'));
+  }
 
   function render() {
     const filtrati = esercizi
@@ -87,6 +108,29 @@ export async function vistaEsercizi(root, { id } = {}) {
 
     clear(lista).appendChild(tabella({
       colonne: [
+        {
+          label: h('input', {
+            type: 'checkbox',
+            title: 'Spunta tutti quelli elencati',
+            'aria-label': 'Spunta tutti gli esercizi elencati',
+            checked: filtrati.length > 0 && filtrati.every(x => stato.scelti.has(x.id)),
+            onChange: (ev) => {
+              for (const x of filtrati) {
+                if (ev.target.checked) stato.scelti.add(x.id); else stato.scelti.delete(x.id);
+              }
+              render();
+            }
+          }),
+          cell: (x) => h('input', {
+            type: 'checkbox',
+            checked: stato.scelti.has(x.id),
+            'aria-label': 'Scegli ' + x.nome,
+            onChange: (ev) => {
+              if (ev.target.checked) stato.scelti.add(x.id); else stato.scelti.delete(x.id);
+              aggiornaBarra();
+            }
+          })
+        },
         {
           label: 'Esercizio', cell: (x) => h('div', { class: 'es-riga' },
             x.immagini?.[0]
@@ -111,6 +155,7 @@ export async function vistaEsercizi(root, { id } = {}) {
       onRowClick: (x) => S.vai('/esercizi/' + x.id),
       vuotoTesto: 'Nessun esercizio con questi filtri.'
     }));
+    aggiornaBarra();
   }
 
   add(clear(root),
@@ -133,9 +178,76 @@ export async function vistaEsercizi(root, { id } = {}) {
       h('button', { class: 'btn btn-sm', onClick: () => importaLibreria() }, '⬆ Importa'),
       h('button', { class: 'btn btn-primary', onClick: () => nuovoEsercizio() }, '+ Nuovo esercizio')),
     h('p', { class: 'faint small' },
-      `${esercizi.length} esercizi in libreria. Sono un punto di partenza da adattare: modificali, duplicali o cancellali liberamente.`),
+      `${esercizi.length} esercizi in libreria. Spunta quelli che ti servono per comporre la scheda del paziente. Sono un punto di partenza da adattare: modificali, duplicali o cancellali liberamente.`),
+    barra,
     lista);
   render();
+}
+
+/* ------------------------------------------------------------------ */
+/* Scheda da mandare al paziente                                       */
+/* ------------------------------------------------------------------ */
+/*
+   Dalla libreria si spuntano gli esercizi e si compone la scheda: un file da
+   allegare a una mail o a un messaggio, oppure la stampa. La dose e' quella di
+   libreria; per dosi cucite sul paziente si passa dal programma dentro
+   l'episodio di cura, che le conserva nel tempo.
+*/
+async function componiScheda(scelti) {
+  if (!scelti.length) return;
+  const imp = await S.imp();
+  const pazienti = await db.all('pazienti');
+  const dati = { per: '', note: '' };
+
+  const elenco = h('ol', { class: 'small', style: { margin: '0', paddingLeft: '18px' } },
+    scelti.map(x => h('li', x.nome + (doseInRiga(x.dose) ? ' — ' + doseInRiga(x.dose) : ''))));
+
+  const documento = () => documentoProgramma(
+    { voci: scelti.map(es => ({ esercizio: es, dose: es.dose })), note: dati.note },
+    { cognome: dati.per.trim() }, imp, null);
+
+  modal({
+    title: 'Scheda per il paziente',
+    size: 'lg',
+    body: h('div',
+      h('div', { class: 'form-grid' },
+        h('div', { class: 'field w-half' },
+          h('label', 'Per'),
+          h('input', {
+            type: 'text', list: 'pazienti-scheda', placeholder: 'Nome del paziente',
+            onInput: (ev) => { dati.per = ev.target.value; }
+          }),
+          h('datalist', { id: 'pazienti-scheda' },
+            pazienti.map(x => h('option', { value: fullName(x) }))),
+          h('span', { class: 'hint' }, 'Facoltativo. Compare in cima alla scheda.')),
+        h('div', { class: 'field w-full' },
+          h('label', 'Indicazioni generali'),
+          h('textarea', {
+            rows: 2,
+            placeholder: 'Es. due volte al giorno, mattina e sera. Se i sintomi peggiorano e non rientrano entro 24 ore, sospendi e chiamami.',
+            onInput: (ev) => { dati.note = ev.target.value; }
+          }),
+          h('span', { class: 'hint' }, 'Compaiono in un riquadro prima degli esercizi.'))),
+      h('p', { class: 'small faint mb0' }, 'Esercizi nella scheda, in quest’ordine:'),
+      elenco,
+      h('p', { class: 'small faint' },
+        'Il file è una pagina che si apre su qualsiasi telefono o computer, anche senza collegamento: ' +
+        'immagini e impaginazione sono dentro al file. Il paziente può stamparla dal menu del browser. ' +
+        'Contiene indicazioni cliniche e, se lo compili, il nome del paziente: trattalo come un documento clinico.')),
+    actions: [
+      { label: 'Chiudi' },
+      { label: '🖨 Stampa', onClick: () => stampaProgramma(
+        { voci: scelti.map(es => ({ esercizio: es, dose: es.dose })), note: dati.note },
+        { cognome: dati.per.trim() }, imp, null) },
+      {
+        label: '⬇ Scarica il file', class: 'btn-primary',
+        onClick: async () => {
+          await scaricaScheda(documento(), { per: dati.per.trim() });
+          toast('Scheda scaricata: allegala alla mail o al messaggio.', 'ok');
+        }
+      }
+    ]
+  });
 }
 
 /* ------------------------------------------------------------------ */

@@ -12,7 +12,7 @@ import { add, h, clear, toast, nz, todayISO, matches, fmtDate, fullName } from '
 import { modal, conferma, badge, vuoto } from '../ui/kit.js';
 import { REGIONI, CATEGORIE, CAMPI_DOSE, doseInRiga, doseEffettiva } from '../schema/esercizi.js';
 import { assicuraCatalogo, nuovoEsercizio } from './esercizi.js';
-import { stampaProgramma, documentoProgramma, anteprima } from '../print.js';
+import { stampaProgramma, documentoProgramma, anteprima, scaricaScheda } from '../print.js';
 import * as db from '../db.js';
 import * as S from '../state.js';
 
@@ -147,6 +147,17 @@ export async function vistaProgramma(root, ep, paz, salva) {
               stampaProgramma({ ...prog, voci: risolte }, paz, imp, ep);
             }
           }, '🖨 Stampa per il paziente'),
+          h('button', {
+            class: 'btn btn-sm',
+            onClick: async () => {
+              const risolte = vociRisolte(prog, libreria);
+              if (!risolte.length) { toast('Il programma è vuoto.', 'err'); return; }
+              await scaricaScheda(
+                documentoProgramma({ ...prog, voci: risolte }, paz, imp, ep),
+                { per: fullName(paz) });
+              toast('Scheda scaricata: allegala alla mail o al messaggio.', 'ok');
+            }
+          }, '⬇ File per il paziente'),
           h('button', {
             class: 'btn btn-primary',
             onClick: () => scegliDallaLibreria(libreria, prog, () => { registra(); disegna(); })

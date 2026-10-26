@@ -11,5 +11,5 @@
        vanno convertiti.
    Lo storico delle versioni sta in docs/versioni.md.
    ============================================================ */
-export const VERSIONE = '1.3';
+export const VERSIONE = '1.4';
 export const VERSIONE_DATA = '2026-10-26';

@@ -2,7 +2,7 @@
    Generazione dei documenti cartacei:
    fattura, cartella clinica, informativa e consensi.
    ============================================================ */
-import { h, clear, fmtDate, fmtDateLong, fmtEUR, fullName, nz, age, isEmptyVal, toast } from './util.js';
+import { h, clear, fmtDate, fmtDateLong, fmtEUR, fullName, nz, age, isEmptyVal, toast, downloadFile } from './util.js';
 import { calcolaTotali, numeroCompleto, noteFattura } from './fatture.js';
 import { CARTELLA, SEDUTA } from './schema/ompt.js';
 import { doseInRiga } from './schema/esercizi.js';
@@ -582,3 +582,96 @@ export function documentoProgramma(programma, paziente, imp, episodio) {
 }
 
 export function stampaProgramma(...args) { stampa(documentoProgramma(...args)); }
+
+/* ------------------------------------------------------------------ */
+/* FILE DA INVIARE AL PAZIENTE                                         */
+/* ------------------------------------------------------------------ */
+/*
+   La stampa va bene in studio; per mandare la scheda a casa serve un file.
+   Qui la scheda diventa una pagina HTML autonoma: stile e immagini stanno
+   dentro al file, quindi si apre su qualsiasi telefono o computer anche senza
+   collegamento a internet e senza il gestionale. Si allega a una mail o a un
+   messaggio, e il paziente puo' stamparla: le regole di stampa sono incluse.
+   Non si genera un PDF perche' servirebbe una libreria esterna; dal file
+   aperto, "Stampa → Salva come PDF" lo produce in due clic.
+*/
+
+/** Lo stesso foglio di stile della stampa, letto a runtime per non duplicarlo. */
+async function foglioStampa() {
+  try {
+    const r = await fetch(new URL('../css/print.css', import.meta.url));
+    return r.ok ? await r.text() : '';
+  } catch { return ''; }
+}
+
+/* Fuori dal gestionale non c'e' app.css: queste poche regole bastano a rendere
+   la pagina leggibile a schermo, sul telefono e in stampa. */
+const STILE_SCHERMO = `
+  body { margin: 0; padding: 18px 14px 48px; background: #f4f5f6; color: #111;
+    font-family: "Helvetica Neue", Arial, sans-serif; -webkit-text-size-adjust: 100%; }
+  .print-preview .doc { max-width: 190mm; margin: 0 auto; background: #fff;
+    padding: 20px 22px; border-radius: 10px; box-shadow: 0 1px 5px rgba(0,0,0,.14); }
+  .print-preview img { max-width: 100%; height: auto; }
+  .avviso { max-width: 190mm; margin: 0 auto 12px; font-size: 13px; color: #555; }
+
+  /* Sul telefono l'impaginazione a due colonne della stampa lascerebbe al
+     testo una striscia di pochi caratteri: etichetta sopra, testo sotto. */
+  @media screen and (max-width: 680px) {
+    body { padding: 10px 8px 32px; }
+    .print-preview .doc { padding: 14px 15px; font-size: 11.5pt; }
+    .print-preview .ex-riga { display: block; }
+    .print-preview .ex-lbl { display: block; flex: none; margin-bottom: 2px; }
+    .print-preview .kv { display: block; }
+    .print-preview .kv dt { margin-top: 4px; }
+    .print-preview .kv dd { margin: 0 0 2px; }
+    .print-preview .ex-foto { float: none; width: 100%; margin: 0 0 8px; }
+  }
+
+  @media print {
+    body { padding: 0; background: #fff; }
+    .avviso { display: none; }
+    .print-preview .doc { box-shadow: none; border-radius: 0; padding: 0; max-width: none; }
+  }
+`;
+
+const perHtml = (t) => String(t == null ? '' : t)
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+/** La scheda come pagina HTML completa, pronta da salvare. */
+export async function paginaScheda(doc, { titolo = 'Scheda di esercizi' } = {}) {
+  const css = await foglioStampa();
+  return `<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${perHtml(titolo)}</title>
+<style>
+${css}
+${STILE_SCHERMO}
+</style>
+</head>
+<body>
+<p class="avviso">Scheda da seguire a casa. Per stamparla: menu del browser → Stampa.</p>
+<div class="print-preview">
+${doc.outerHTML}
+</div>
+</body>
+</html>
+`;
+}
+
+/** Nome file leggibile e senza caratteri che diano noia fuori dal computer. */
+export function nomeFileScheda(per) {
+  const pulito = String(per || '').toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  const oggi = new Date().toLocaleDateString('sv-SE');
+  return ['esercizi', pulito, oggi].filter(Boolean).join('-') + '.html';
+}
+
+/** Costruisce il file e lo consegna al browser. */
+export async function scaricaScheda(doc, { per = '', titolo } = {}) {
+  const html = await paginaScheda(doc, { titolo: titolo || ('Esercizi' + (per ? ' per ' + per : '')) });
+  downloadFile(nomeFileScheda(per), html, 'text/html');
+}
