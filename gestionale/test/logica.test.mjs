@@ -488,16 +488,23 @@ eq('import: nessun progressivo', numeroProgressivo('ABC'), null);
   const nomi = es.CATALOGO.map(x => x.nome);
   eq('esercizi: nessun nome ripetuto', nomi.length - new Set(nomi).size, 0);
 
-  // Protocollo post-operatorio di cuffia: i quattro esercizi della fase passiva
-  // devono esserci tutti, con la stessa etichetta e le cautele compilate.
-  const cuffia = es.CATALOGO.filter(x => x.protocollo === es.PROTOCOLLO_CUFFIA);
-  eq('cuffia: i quattro esercizi della fase passiva', cuffia.map(x => x.nome).sort(), [
-    'Abduzione passiva con bastone, da supino',
-    'Elevazione assistita dall\u2019arto sano, da supino',
-    'Elevazione delle scapole da seduto (spallucce)',
-    'Esercizi pendolari di Codman'
-  ]);
-  eq('cuffia: tutti nella regione Spalla', [...new Set(cuffia.map(x => x.regione))], ['Spalla']);
+  // Protocollo post-operatorio di cuffia: quattro fasi, tutte popolate, con le
+  // cautele compilate su ogni voce.
+  const cuffia = es.CATALOGO.filter(x => (es.PROTOCOLLI_CUFFIA || []).includes(x.protocollo));
+  eq('cuffia: le quattro fasi esistono tutte', es.PROTOCOLLI_CUFFIA.length, 4);
+  eq('cuffia: nessuna fase e rimasta vuota',
+    es.PROTOCOLLI_CUFFIA.filter(f => !cuffia.some(x => x.protocollo === f)), []);
+  eq('cuffia: la fase 1 e quella passiva', es.PROTOCOLLO_CUFFIA, es.PROTOCOLLI_CUFFIA[0]);
+
+  // La fase passiva deve contenere i cardini, compresi gli snodi lontani dalla
+  // spalla che il tutore fa irrigidire.
+  const fase1 = cuffia.filter(x => x.protocollo === es.PROTOCOLLI_CUFFIA[0]).map(x => x.nome);
+  for (const atteso of ['Codman', 'bastone', 'spallucce', 'gomito', 'Mano e polso', 'collo']) {
+    eq('cuffia fase 1: compare ' + atteso, fase1.some(n => n.toLowerCase().includes(atteso.toLowerCase())), true);
+  }
+  eq('cuffia: il protocollo copre anche gomito, mano e collo',
+    [...new Set(cuffia.map(x => x.regione))].sort(),
+    ['Gomito', 'Polso e mano', 'Rachide cervicale', 'Spalla']);
   const senzaCautele = cuffia.filter(x => !x.precauzioni || !x.doloreAmmesso || !x.note);
   eq('cuffia: precauzioni, dolore ammesso e razionale su ogni voce', senzaCautele.map(x => x.nome), []);
   const senzaFrequenza = cuffia.filter(x => !x.dose?.frequenza);
@@ -506,7 +513,7 @@ eq('import: nessun progressivo', numeroProgressivo('ABC'), null);
   eq('cuffia: le precauzioni rimandano al protocollo del chirurgo', senzaChirurgo.map(x => x.nome), []);
 
   // L'elenco dei protocolli serve ai filtri: senza ripetizioni e senza vuoti.
-  eq('protocolli: elencati una volta sola', es.protocolliPresenti(es.CATALOGO), [es.PROTOCOLLO_CUFFIA]);
+  eq('protocolli: elencati una volta sola', es.protocolliPresenti(es.CATALOGO), [...es.PROTOCOLLI_CUFFIA]);
   eq('protocolli: niente da elencare senza protocolli', es.protocolliPresenti([{ nome: 'x' }, {}]), []);
   eq('protocolli: ordine alfabetico', es.protocolliPresenti([{ protocollo: 'Zeta' }, { protocollo: 'Alfa' }, { protocollo: 'Zeta' }]), ['Alfa', 'Zeta']);
 

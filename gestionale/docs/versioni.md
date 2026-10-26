@@ -13,6 +13,37 @@ La forma è `maiuscola.minore`:
 
 ---
 
+## 1.5 — 26 ottobre 2026
+
+**Il protocollo di cuffia diventa completo: quattro fasi, 22 esercizi**
+- Alla fase passiva si aggiungono **flesso-estensione di gomito con avambraccio
+  sostenuto**, **mano e polso** (pompa, presa, prono-supinazione), **mobilità attiva
+  del collo**, **rotazione esterna passiva con bastone** e una voce di educazione su
+  **tutore, sonno e postura**: con il tutore si irrigidisce anche quello che non è
+  stato operato.
+- Nuova **fase 2 (attiva assistita)**, circa 6–12 settimane: elevazione assistita con
+  bastone da supino a seduto, carrucola, risalita al muro, retrazione e depressione
+  scapolare, elevazione attiva nel piano della scapola da supino, isometrie
+  submassimali.
+- Nuova **fase 3 (rinforzo)**, dalla dodicesima: rotazione esterna e interna con
+  elastico, remata, scaption con carico leggero, Y e T in prono.
+- Nuova **fase 4 (ritorno alle attività)**, dalla sedicesima: spinte progressive in
+  appoggio e una voce sul ritorno al lavoro e ai gesti sopra la testa, con i criteri
+  di dimissione che ricorrono nei protocolli (escursione completa e indolore, forza
+  entro il 10% del lato sano, nessun compenso, dolore 0–2/10, via libera del chirurgo).
+- La nota degli esercizi di Codman è stata precisata: l'attività elettrica resta bassa,
+  ma il movimento gleno-omerale prodotto è minimo, quindi è gestione del dolore e primo
+  contatto con il movimento, non il mezzo principale per mantenere l'escursione. Chi ha
+  già l'esercizio in libreria conserva la versione precedente, perché gli aggiornamenti
+  non sovrascrivono le voci esistenti.
+
+**Attenzione clinica.** Settimane e gradi sono quelli ricorrenti nei protocolli
+pubblicati, che fra loro divergono: il riferimento resta il protocollo del chirurgo. Le
+fonti usate sono elencate in `docs/esercizi.md`; una linea guida italiana specifica sulla
+riabilitazione post-operatoria della cuffia non è stata trovata.
+
+---
+
 ## 1.4 — 26 ottobre 2026
 
 **La scheda degli esercizi diventa un file da mandare al paziente**

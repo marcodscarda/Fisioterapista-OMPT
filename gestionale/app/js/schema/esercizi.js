@@ -40,7 +40,7 @@ export const CATEGORIE = [
 
 export const ATTREZZATURA = [
   'Nessuna', 'Elastico', 'Manubri', 'Kettlebell', 'Bastone', 'Palla',
-  'Fitball', 'Tappetino', 'Sedia', 'Muro', 'Gradino', 'Cuscino propriocettivo',
+  'Fitball', 'Tappetino', 'Sedia', 'Muro', 'Gradino', 'Cuscino', 'Cuscino propriocettivo',
   'Bosu', 'Foam roller', 'Panca', 'Lettino', 'Corda', 'Cavigliera'
 ];
 
@@ -96,10 +96,25 @@ export function doseEffettiva(esercizio, voce) {
    prescrizione. Si modificano, si duplicano e si cancellano come
    qualsiasi esercizio aggiunto a mano.
 */
-/* Etichetta e cautele condivise dagli esercizi del post-operatorio di cuffia:
-   scritte una volta, cosi' restano identiche in tutta la fase. */
-export const PROTOCOLLO_CUFFIA = 'Sutura della cuffia dei rotatori — fase 1 (passiva)';
-const PRECAUZIONI_CUFFIA = 'Tempi e gradi concessi li stabilisce il chirurgo e dipendono da tendine suturato, dimensione della lesione e tecnica: questo esercizio va eseguito solo entro quei limiti. In questa fase nessuna contrazione attiva della cuffia, nessun peso portato con il braccio operato, nessun appoggio per alzarsi. Con sutura del sottoscapolare, rotazione esterna ed estensione restano limitate. Tutore rimesso subito dopo, se prescritto.';
+/* Etichette e cautele del post-operatorio di cuffia: scritte una volta, cosi'
+   restano identiche in tutto il percorso. Le settimane indicate sono quelle
+   ricorrenti nei protocolli pubblicati; il riferimento resta il chirurgo. */
+export const PROTOCOLLI_CUFFIA = [
+  'Sutura della cuffia dei rotatori — fase 1 (passiva)',
+  'Sutura della cuffia dei rotatori — fase 2 (attiva assistita)',
+  'Sutura della cuffia dei rotatori — fase 3 (rinforzo)',
+  'Sutura della cuffia dei rotatori — fase 4 (ritorno alle attività)'
+];
+const [CUFFIA_1, CUFFIA_2, CUFFIA_3, CUFFIA_4] = PROTOCOLLI_CUFFIA;
+/** La fase passiva, la prima: nome storico tenuto per compatibilita'. */
+export const PROTOCOLLO_CUFFIA = CUFFIA_1;
+
+const CHIRURGO = 'Tempi e gradi concessi li stabilisce il chirurgo e dipendono da tendine suturato, dimensione della lesione e tecnica: questo esercizio va eseguito solo entro quei limiti.';
+const SOTTOSCAPOLARE = 'Con sutura del sottoscapolare la rotazione esterna resta spesso bloccata a 0° per 4–6 settimane e poi si apre di una decina di gradi a settimana; estensione del braccio dietro il tronco e rotazione interna contro resistenza restano escluse più a lungo.';
+
+const PRECAUZIONI_CUFFIA = CHIRURGO + ' In questa fase nessuna contrazione attiva della cuffia, nessun peso portato con il braccio operato, nessun appoggio per alzarsi. ' + SOTTOSCAPOLARE + ' Tutore rimesso subito dopo, se prescritto.';
+const PRECAUZIONI_CUFFIA_2 = CHIRURGO + ' Fase di passaggio: il movimento si fa attivo ma il tendine sta ancora maturando. Niente sollevamento di pesi (di norma non oltre 1–1,5 kg), niente spinte, niente stretching forzato a fine corsa, nessuna ripetizione dentro un arco doloroso. Se compaiono compensi — spalla che sale verso l’orecchio, tronco che si inclina — o dolore che compare il giorno dopo, si torna all’assistito. ' + SOTTOSCAPOLARE;
+const PRECAUZIONI_CUFFIA_3 = CHIRURGO + ' Il carico si aggiunge solo con movimento completo e indolore e senza compensi. Si sale di resistenza quando le ultime ripetizioni restano pulite, mai perché è passata una settimana. Dolore che resta oltre 24 ore o che cresce serie dopo serie significa tornare indietro di un gradino. ' + SOTTOSCAPOLARE;
 
 const e = (o) => ({
   attrezzatura: [], puntiChiave: [], erroriComuni: [], immagini: [], video: [],
@@ -367,7 +382,7 @@ export const CATALOGO = [
     regressione: 'Solo avanti e indietro, oscillazione minima; da seduto con il braccio che pende di lato.',
     precauzioni: 'Interrompere in caso di dolore acuto, formicolio alla mano o capogiro nella posizione inclinata. Con problemi lombari rilevanti, appoggiarsi bene e ridurre l’inclinazione del busto. Nessun peso al braccio o al polso in questa fase. ' + PRECAUZIONI_CUFFIA,
     doloreAmmesso: 'Fino a 2–3/10, in genere in riduzione durante l’esecuzione. Se il dolore aumenta oscillazione dopo oscillazione, sospendi.',
-    note: 'Il pendolo è passivo solo se il motore è il tronco: eseguito così l’attività elettrica del sovraspinato resta bassa, mentre se il paziente muove il braccio diventa un esercizio attivo e perde la sua ragione d’essere nel post-operatorio. Vale la pena farlo eseguire davanti a sé almeno una volta e correggerlo: è l’esercizio più frequentemente sbagliato di questa fase. L’oscillazione ampia, inoltre, porta la spalla in gradi che il protocollo non concede ancora.'
+    note: 'Il pendolo è passivo solo se il motore è il tronco: eseguito così l’attività elettrica del sovraspinato resta bassa, mentre se il paziente muove il braccio diventa un esercizio attivo e perde la sua ragione d’essere nel post-operatorio. Vale la pena farlo eseguire davanti a sé almeno una volta e correggerlo: è l’esercizio più frequentemente sbagliato di questa fase. L’oscillazione ampia, inoltre, porta la spalla in gradi che il protocollo non concede ancora. Va però ridimensionata l’aspettativa: misurazioni cinematiche su volontari sani mostrano che il pendolo produce pochissimo movimento gleno-omerale e scapolo-toracico, perché quasi tutto lo spostamento viene dal tronco. È quindi utile come gestione del dolore e come primo contatto con il movimento, non come mezzo principale per mantenere l’escursione: quella in questa fase arriva dalla mobilizzazione assistita.'
   }),
   e({
     nome: 'Abduzione passiva con bastone, da supino',
@@ -396,6 +411,527 @@ export const CATALOGO = [
     precauzioni: 'Con sutura del sottoscapolare non associare rotazione esterna o estensione all’abduzione. Nessun movimento con la mano dietro la schiena. Interrompere in caso di dolore acuto o sensazione di cedimento. ' + PRECAUZIONI_CUFFIA,
     doloreAmmesso: 'Tensione fino a 2–3/10 che rientra subito al ritorno. Nessun dolore acuto.',
     note: 'Il bastone serve a dosare: l’arto sano percepisce la resistenza e si ferma prima, cosa che una mano appoggiata sul braccio fa con meno precisione. La posizione supina toglie alla cuffia il compito di sostenere l’arto. Restare nel piano della scapola riduce il conflitto sotto-acromiale rispetto all’abduzione pura sul piano frontale; l’associazione fra abduzione e rotazione esterna è invece la combinazione che allunga di più la riparazione del sovraspinato, e va evitata finché il protocollo non la concede.'
+  }),
+
+  e({
+    nome: 'Flesso-estensione di gomito con avambraccio sostenuto',
+    regione: 'Gomito', categoria: 'Mobilità',
+    protocollo: CUFFIA_1, da: '1.5',
+    obiettivo: 'Conservare la mobilità completa del gomito mentre la spalla sta ferma nel tutore.',
+    attrezzatura: ['Sedia'],
+    posizione: 'Seduto su una sedia con schienale, tutore slacciato. Il braccio resta appoggiato al fianco e l’avambraccio è sostenuto: dalla mano sana sotto il polso, oppure appoggiato su un cuscino in grembo.',
+    esecuzione: 'Piega lentamente il gomito portando la mano verso la spalla fino a dove arriva senza forzare, poi distendilo del tutto. La spalla non si muove: braccio incollato al fianco per tutto il movimento. Aggiungi poi, a gomito piegato a 90°, la rotazione dell’avambraccio: palmo in su, palmo in giù.',
+    puntiChiave: [
+      'Si muove solo il gomito: se la spalla si sposta, il braccio non è abbastanza appoggiato',
+      'Arrivare ogni volta alla distensione completa, non fermarsi a metà',
+      'Movimento lento, senza slanci e senza molleggiare a fine corsa',
+      'Più volte al giorno, poco per volta: è la frequenza che conta'
+    ],
+    erroriComuni: [
+      'Staccare il gomito dal fianco e trasformarlo in un movimento di spalla',
+      'Fermarsi sempre a metà estensione, che è il modo più rapido per irrigidire il gomito',
+      'Farlo una volta sola al giorno, a lungo, invece di poco e spesso',
+      'Tenere il tutore allacciato e muovere solo le dita'
+    ],
+    respirazione: 'Respira normalmente: non c’è una fase di sforzo.',
+    dose: { serie: '1–2', ripetizioni: '10–15', frequenza: '4–5 volte al giorno', ritmo: 'lento' },
+    progressione: 'Nessuna progressione di carico in questa fase: resta un movimento libero. Quando il tutore viene tolto, il gomito segue naturalmente i movimenti di spalla.',
+    regressione: 'Ampiezza minore, con l’avambraccio che resta appoggiato al cuscino per tutto il movimento.',
+    precauzioni: 'Non usare il braccio operato per sollevare, spingere o sostenere nulla: muovere il gomito a vuoto è un’altra cosa dal farlo lavorare. Nessuna rotazione del braccio e nessuna estensione dietro il tronco. ' + PRECAUZIONI_CUFFIA,
+    doloreAmmesso: 'Nessun dolore alla spalla. Un senso di rigidità al gomito nei primi giorni è normale e cala muovendolo.',
+    note: 'È il motivo per cui i protocolli post-operatori prescrivono movimento attivo di gomito, polso e mano dal primo giorno pur tenendo il tutore: il gomito tenuto fermo a 90° per settimane perde l’estensione in fretta, e recuperarla dopo costa più del recupero della spalla. Un protocollo lo riassume come mantenere la mobilità completa di collo, gomito, polso e mano mentre la spalla è protetta. Non carica la riparazione perché bicipite brachiale e tricipite non fanno parte della cuffia: va però tenuto conto che un capo lungo del bicipite tenodesizzato o trasferito cambia le indicazioni, ed è una cosa da chiedere al chirurgo.'
+  }),
+  e({
+    nome: 'Mano e polso: pompa, presa e rotazione dell’avambraccio',
+    regione: 'Polso e mano', categoria: 'Mobilità',
+    protocollo: CUFFIA_1, da: '1.5',
+    obiettivo: 'Tenere in movimento le articolazioni distali e aiutare il riassorbimento del gonfiore della mano.',
+    attrezzatura: ['Palla'],
+    posizione: 'Seduto, avambraccio appoggiato sul bracciolo o su un cuscino, con la mano più in alto del gomito quando è possibile.',
+    esecuzione: 'Apri e chiudi la mano lentamente, arrivando ogni volta a dita completamente distese e poi a pugno morbido. Stringi una pallina o un panno arrotolato per qualche secondo e lascia. Muovi poi il polso in alto e in basso e ruota l’avambraccio, palmo in su e palmo in giù.',
+    puntiChiave: [
+      'Aprire del tutto conta quanto chiudere: le dita si irrigidiscono in flessione',
+      'Tenere la mano sollevata rispetto al gomito aiuta il gonfiore a defluire',
+      'Stretta decisa ma non massimale, senza trattenere il respiro',
+      'Poco e spesso durante la giornata'
+    ],
+    erroriComuni: [
+      'Stringere forte dimenticando di aprire',
+      'Tenere la mano abbandonata in basso tutto il giorno dentro il tutore',
+      'Muovere il polso facendo partire anche la spalla',
+      'Aspettare che il gonfiore passi da solo'
+    ],
+    respirazione: 'Libera.',
+    dose: { serie: '1–2', ripetizioni: '15–20', tenuta: '3 secondi nella presa', frequenza: '4–5 volte al giorno' },
+    progressione: 'Quando il gonfiore è passato basta mantenere il movimento libero di dita e polso.',
+    regressione: 'Solo apertura e chiusura della mano, senza presa e senza movimento del polso.',
+    precauzioni: 'Dita fredde, formicolio persistente, gonfiore che aumenta invece di calare o dolore che cambia natura vanno riferiti: non sono cose da gestire con l’esercizio. ' + PRECAUZIONI_CUFFIA,
+    doloreAmmesso: 'Nessuno nella spalla; alla mano solo la tensione del gonfiore, che cala muovendola.',
+    note: 'Il gonfiore della mano nei primi giorni è dovuto all’arto tenuto fermo e in basso: la contrazione ritmica dei muscoli dell’avambraccio spinge il ritorno venoso e linfatico, e tenere la mano più in alto del gomito sfrutta la gravità nella direzione giusta. I protocolli lo abbinano al ghiaccio sulla spalla nella stessa fase. Serve anche a cogliere presto un problema diverso: formicolii o dita fredde non sono effetti dell’intervento da aspettare pazientemente.'
+  }),
+  e({
+    nome: 'Mobilità attiva del collo con tutore',
+    regione: 'Rachide cervicale', categoria: 'Mobilità',
+    protocollo: CUFFIA_1, da: '1.5',
+    obiettivo: 'Evitare che collo e trapezio si irrigidiscano nelle settimane con il tutore.',
+    attrezzatura: ['Sedia'],
+    posizione: 'Seduto, schiena appoggiata, piedi a terra, tutore indossato e braccio sostenuto.',
+    esecuzione: 'Ruota lentamente la testa a destra e a sinistra fino a dove va senza tirare; inclina l’orecchio verso la spalla da un lato e dall’altro; porta il mento verso il petto. Fermati un istante al limite comodo di ogni direzione, poi torna al centro. Fra una serie e l’altra lascia scendere le spalle con un respiro lungo.',
+    puntiChiave: [
+      'Ampiezza comoda, non massima: non è uno stretching',
+      'Le spalle restano basse e ferme mentre la testa si muove',
+      'Il lato operato va mobilizzato quanto l’altro, anche se dà più impaccio',
+      'Lasciar scendere le spalle fa parte dell’esercizio'
+    ],
+    erroriComuni: [
+      'Tirare con la mano per guadagnare gradi',
+      'Alzare la spalla operata insieme alla testa',
+      'Trattenere il respiro',
+      'Saltarlo perché il problema sembra solo di spalla'
+    ],
+    respirazione: 'Espira mentre torni al centro; un respiro lungo fra le serie.',
+    dose: { serie: '1–2', ripetizioni: '5–8 per direzione', frequenza: '2–3 volte al giorno', ritmo: 'lento' },
+    progressione: 'Quando il tutore viene lasciato, si prosegue senza sostegno del braccio e si aggiungono i movimenti del cingolo scapolare.',
+    regressione: 'Solo rotazioni, con ampiezza ridotta.',
+    precauzioni: 'Capogiro, disturbi visivi, formicolii al braccio o dolore che si irradia sotto il gomito non appartengono a questo esercizio: sospendere e riferire. ' + PRECAUZIONI_CUFFIA,
+    doloreAmmesso: 'Tensione muscolare fino a 2–3/10 che passa al ritorno. Nessun dolore alla spalla operata.',
+    note: 'Un protocollo post-operatorio pone fra gli obiettivi della prima fase il mantenimento della mobilità completa del rachide cervicale, insieme a gomito, polso e mano; altri aggiungono il rilassamento del trapezio superiore e il lavoro sulla postura. Il motivo è pratico: con il tutore la spalla sale e la testa si porta in avanti, e dopo qualche settimana il collo diventa un secondo problema che il paziente sente spesso più della spalla. Costa pochi minuti al giorno e previene una consulenza in più.'
+  }),
+  e({
+    nome: 'Rotazione esterna passiva con bastone, da supino',
+    regione: 'Spalla', categoria: 'Mobilità',
+    protocollo: CUFFIA_1, da: '1.5',
+    obiettivo: 'Recuperare la rotazione esterna passiva entro il limite concesso, senza attivare la cuffia.',
+    attrezzatura: ['Bastone', 'Lettino'],
+    posizione: 'Supino, ginocchia flesse. Braccio operato lungo il fianco con il gomito piegato a 90° e un asciugamano arrotolato fra gomito e tronco. Entrambe le mani impugnano il bastone.',
+    esecuzione: 'Con la mano sana spingi il bastone in modo da ruotare l’avambraccio operato verso l’esterno, come se aprissi una porta, tenendo il gomito fermo contro l’asciugamano. Fermati al grado concesso dal chirurgo — spesso 0° nelle prime settimane dopo sutura del sottoscapolare, 30–45° negli altri casi — mantieni un istante, poi riaccompagna al centro.',
+    puntiChiave: [
+      'Il gomito non si stacca dal fianco e non scivola indietro',
+      'Ruota l’avambraccio, non la spalla: il braccio resta dov’è',
+      'Il limite è un numero scritto nel protocollo, non la sensazione del momento',
+      'Il ritorno è lento quanto l’andata'
+    ],
+    erroriComuni: [
+      'Lasciare che il gomito si allontani dal tronco',
+      'Aggiungere estensione portando il braccio dietro la linea del corpo',
+      'Spingere oltre il limite perché non fa male',
+      'Eseguirlo seduti, dove il peso del braccio entra nel movimento'
+    ],
+    respirazione: 'Espira mentre apri.',
+    dose: { serie: '2–3', ripetizioni: '10', tenuta: '2–3 secondi', frequenza: '3–4 volte al giorno', ritmo: 'lento' },
+    progressione: 'I gradi si aprono secondo il protocollo: dopo sutura del sottoscapolare si procede spesso di una decina di gradi a settimana. Poi rotazione esterna attiva assistita e infine attiva.',
+    regressione: 'Ampiezza dimezzata, senza tenuta, con l’asciugamano più spesso sotto il gomito.',
+    precauzioni: 'È il movimento che mette più in tensione una sutura del sottoscapolare e, in combinazione con l’abduzione, quella del sovraspinato: il limite non si supera mai per iniziativa. Nessuna estensione associata. ' + PRECAUZIONI_CUFFIA,
+    doloreAmmesso: 'Tensione fino a 2–3/10 che rientra subito. Qualsiasi dolore acuto in avanti, verso la zona del sottoscapolare, è un segnale di stop.',
+    note: 'La posizione di riposo descritta come più sicura dopo la riparazione è circa 30° di elevazione nel piano della scapola con 0–60° di rotazione esterna, che è quanto mantiene un tutore in abduzione: l’asciugamano sotto il gomito riproduce la stessa idea durante l’esercizio. I protocolli per sutura del sottoscapolare bloccano la rotazione esterna a 0° per 4–6 settimane e poi la aprono gradualmente; quelli per il sovraspinato partono in genere da 30–45°. Sono numeri che vanno letti sul protocollo del singolo paziente, non applicati per categoria.'
+  }),
+  e({
+    nome: 'Tutore, sonno e postura dopo la sutura di cuffia',
+    regione: 'Spalla', categoria: 'Educazione e gestione del carico',
+    protocollo: CUFFIA_1, da: '1.5',
+    obiettivo: 'Mettere il paziente in condizione di proteggere la riparazione nelle ventiquattro ore, non solo durante gli esercizi.',
+    attrezzatura: ['Cuscino'],
+    posizione: 'Vale nella giornata intera: a letto, in poltrona, in piedi.',
+    esecuzione: 'Tieni il tutore per il tempo che ti è stato indicato, anche di notte, e toglilo solo per gli esercizi e per l’igiene. Per dormire, preferisci la posizione semi-seduta o supina con un cuscino sotto il braccio operato, così che il gomito resti leggermente in avanti rispetto al tronco e non cada indietro. Non appoggiarti sul lato operato. Per alzarti dal letto o dalla poltrona usa solo il braccio sano. Vesti prima il braccio operato e spoglialo per ultimo. Il ghiaccio sulla spalla, 15–20 minuti più volte al giorno nei primi giorni, aiuta dolore e gonfiore.',
+    puntiChiave: [
+      'Il gomito non deve mai cadere dietro la linea del tronco: è la posizione che tira sulla riparazione',
+      'Niente peso con il braccio operato, nemmeno una borsa della spesa leggera o un cane al guinzaglio',
+      'Il tutore protegge quando è indossato bene: controlla che sostenga davvero il gomito',
+      'Le prime notti sono la parte più difficile: la posizione semi-seduta è quasi sempre la soluzione'
+    ],
+    erroriComuni: [
+      'Togliere il tutore di notte perché dà fastidio',
+      'Usare il braccio operato per puntellarsi quando ci si alza',
+      'Lasciare il braccio penzoloni a lungo fuori dal tutore',
+      'Riprendere la guida prima dell’indicazione del chirurgo'
+    ],
+    respirazione: 'Non pertinente.',
+    dose: { frequenza: 'ogni giorno, fino a indicazione contraria del chirurgo' },
+    progressione: 'Il tutore si abbandona gradualmente secondo l’indicazione: prima in casa, poi fuori. I protocolli pubblicati vanno da 2 a 6 settimane di uso continuativo a seconda della lesione.',
+    regressione: 'Non pertinente.',
+    precauzioni: 'Febbre, arrossamento o secrezione dalla ferita, dolore in netto aumento, gonfiore improvviso del braccio o perdita di sensibilità vanno riferiti subito: non sono cose da attendere al controllo successivo. ' + CHIRURGO,
+    doloreAmmesso: 'Un dolore sordo che cala nelle prime due settimane è atteso. Un dolore che aumenta di giorno in giorno non lo è.',
+    note: 'È la voce che il paziente legge più volte, e l’unica che agisce sulle ventiquattro ore invece che sui dieci minuti di esercizio. Le indicazioni ricorrono in tutti i protocolli consultati: uso continuativo del tutore nella prima fase, posizione di riposo in leggera elevazione nel piano della scapola, ghiaccio, divieto di carico. La durata del tutore è la variabile che cambia di più fra protocolli (2–6 settimane): va scritta sulla scheda del singolo paziente.'
+  }),
+
+  /* ---------- Spalla — sutura della cuffia, fase attiva assistita ---------- */
+  /*
+     Fase 2, in genere fra la sesta e la dodicesima settimana: il movimento
+     diventa prima assistito e poi attivo, il tendine sta ancora maturando e il
+     carico resta fuori. I protocolli pubblicati concordano sulla sequenza e
+     divergono sulle settimane: il riferimento resta il chirurgo.
+  */
+  e({
+    nome: 'Elevazione attiva assistita con bastone, da supino a seduto',
+    regione: 'Spalla', categoria: 'Mobilità',
+    protocollo: CUFFIA_2, da: '1.5',
+    obiettivo: 'Passare dal movimento passivo a quello attivo per gradi, riducendo l’aiuto a mano a mano che il controllo torna.',
+    attrezzatura: ['Bastone', 'Lettino'],
+    posizione: 'Si comincia da supino, poi inclinati a circa 45° con dei cuscini dietro la schiena, infine seduti. Entrambe le mani impugnano il bastone alla larghezza delle spalle.',
+    esecuzione: 'Porta il bastone verso l’alto usando quanto serve dell’arto sano e lasciando che il braccio operato partecipi per la sua parte. Sali fino al limite concesso, mantieni un istante, scendi lentamente controllando il ritorno. Quando il movimento è pulito, aumenta l’inclinazione del busto: supino, poi 45°, poi seduto.',
+    puntiChiave: [
+      'L’aiuto dell’arto sano è il minimo necessario, non il massimo possibile',
+      'Il tronco resta fermo: niente inclinazione all’indietro per guadagnare gradi',
+      'La spalla non sale verso l’orecchio: se succede, riduci l’ampiezza',
+      'La discesa controllata è la parte che fa il lavoro'
+    ],
+    erroriComuni: [
+      'Passare troppo presto alla posizione seduta, dove la gravità pesa tutta sulla cuffia',
+      'Lasciar cadere il braccio nel ritorno',
+      'Compensare con la scapola che si alza',
+      'Ripetere dentro un arco che fa male'
+    ],
+    respirazione: 'Espira salendo, inspira scendendo.',
+    dose: { serie: '2–3', ripetizioni: '10', tenuta: '2 secondi in alto', recupero: '30 secondi', frequenza: '1–2 volte al giorno', ritmo: '3 secondi in discesa' },
+    progressione: 'Dall’inclinazione supina a quella seduta, poi elevazione attiva senza bastone, prima da supino e infine in piedi.',
+    regressione: 'Si torna all’inclinazione precedente, o all’elevazione assistita dall’arto sano senza bastone.',
+    precauzioni: PRECAUZIONI_CUFFIA_2,
+    doloreAmmesso: 'Fino a 3/10 durante il movimento, che rientra entro pochi minuti e non lascia strascichi il giorno dopo.',
+    note: 'La progressione per inclinazione è il cuore di questa fase: coricati la gravità scarica la cuffia, seduti la carica per intero, e i gradi intermedi permettono di dosare. Un protocollo molto usato la scandisce come supino, poi 45°, poi del tutto eretto nell’arco di tre settimane. Il criterio vero non è la settimana ma la qualità: se la spalla sale verso l’orecchio o il tronco si inclina, l’inclinazione è stata aumentata troppo presto.'
+  }),
+  e({
+    nome: 'Elevazione assistita con carrucola',
+    regione: 'Spalla', categoria: 'Mobilità',
+    protocollo: CUFFIA_2, da: '1.5',
+    obiettivo: 'Guadagnare elevazione con un aiuto dosabile dal paziente stesso, quando il movimento assistito è già tollerato.',
+    attrezzatura: ['Corda', 'Sedia'],
+    posizione: 'Seduto sotto la carrucola fissata alla porta, schiena dritta, una maniglia per mano.',
+    esecuzione: 'Tira verso il basso con il braccio sano per far salire quello operato, in avanti o leggermente di lato nel piano della scapola. Sali fino al limite comodo, mantieni un istante, poi accompagna la discesa frenando con il braccio sano: non lasciare che il braccio operato cada.',
+    puntiChiave: [
+      'La salita è guidata, la discesa è frenata: entrambe lente',
+      'Il tronco resta appoggiato e fermo',
+      'Nel piano della scapola, leggermente in avanti, non di lato puro',
+      'Fermarsi prima del punto in cui la spalla scatta o fa male'
+    ],
+    erroriComuni: [
+      'Usarla come stretching, tirando oltre il limite',
+      'Molleggiare in alto',
+      'Lasciar precipitare il braccio nel ritorno',
+      'Introdurla troppo presto, quando serve ancora il movimento puramente passivo'
+    ],
+    respirazione: 'Espira salendo.',
+    dose: { serie: '2–3', ripetizioni: '10–12', tenuta: '2 secondi', frequenza: '1–2 volte al giorno', ritmo: 'lento' },
+    progressione: 'Ridurre progressivamente l’aiuto del braccio sano fino all’elevazione attiva.',
+    regressione: 'Tornare all’assistito con bastone da supino, dove il letto sostiene il braccio.',
+    precauzioni: 'Si introduce dopo la sesta settimana, o quando il protocollo lo prevede. Non è un esercizio passivo: va dosato come un assistito. ' + PRECAUZIONI_CUFFIA_2,
+    doloreAmmesso: 'Fino a 3/10 durante, senza aumento il giorno successivo.',
+    note: 'Va collocata con cura: la misura dell’attività elettrica del sovraspinato durante la carrucola arriva intorno al 17% della contrazione massima, contro circa il 5% della mobilizzazione passiva continua. Non è quindi un esercizio passivo, come talvolta viene presentato, ma un assistito a tutti gli effetti: prima della sesta settimana è fuori posto nella maggior parte dei protocolli.'
+  }),
+  e({
+    nome: 'Risalita al muro con la mano (wall walk)',
+    regione: 'Spalla', categoria: 'Mobilità',
+    protocollo: CUFFIA_2, da: '1.5',
+    obiettivo: 'Guadagnare elevazione in piedi con il muro che sostiene parte del peso del braccio.',
+    attrezzatura: ['Muro'],
+    posizione: 'In piedi di fronte al muro, a un passo di distanza, mano operata appoggiata al muro all’altezza della spalla.',
+    esecuzione: 'Fai camminare le dita verso l’alto lungo il muro, avvicinandoti di un passo se serve, fino al limite comodo. Resta qualche secondo, poi torna giù camminando con le dita, senza lasciar cadere il braccio.',
+    puntiChiave: [
+      'Le dita camminano: il braccio non viene lanciato verso l’alto',
+      'La spalla resta bassa, il collo lungo',
+      'Nessuna inclinazione del tronco di lato per salire di più',
+      'La discesa è lenta quanto la salita'
+    ],
+    erroriComuni: [
+      'Inarcare la schiena o inclinarsi per guadagnare centimetri',
+      'Alzare la spalla verso l’orecchio',
+      'Fermarsi solo quando fa male invece che al limite comodo',
+      'Farlo di lato prima che l’elevazione in avanti sia buona'
+    ],
+    respirazione: 'Espira salendo.',
+    dose: { serie: '2–3', ripetizioni: '8–10', tenuta: '3–5 secondi in alto', frequenza: '1–2 volte al giorno', ritmo: 'lento' },
+    progressione: 'Prima in avanti, poi di lato quando il protocollo lo concede; infine elevazione attiva senza appoggio.',
+    regressione: 'Partire più lontano dal muro e salire meno; oppure tornare all’assistito con bastone.',
+    precauzioni: 'L’abduzione sopra i 90° resta spesso esclusa fino alla settima-dodicesima settimana. ' + PRECAUZIONI_CUFFIA_2,
+    doloreAmmesso: 'Fino a 3/10, che rientra entro pochi minuti.',
+    note: 'Il muro fa due cose: sostiene una parte del peso dell’arto, e dà un riferimento visibile di quanto si è saliti, che per il paziente vale più di qualsiasi spiegazione sulla progressione. Attenzione al compenso: è l’esercizio in cui il tronco si inclina più facilmente, e il centimetro guadagnato in quel modo non è elevazione di spalla.'
+  }),
+  e({
+    nome: 'Retrazione e depressione attiva delle scapole',
+    regione: 'Spalla', categoria: 'Controllo motorio',
+    protocollo: CUFFIA_2, da: '1.5',
+    obiettivo: 'Ritrovare il controllo attivo della scapola, che sostiene il movimento del braccio quando torna attivo.',
+    attrezzatura: ['Sedia'],
+    posizione: 'Seduto o in piedi, braccia rilassate lungo il corpo, sterno leggermente sollevato.',
+    esecuzione: 'Avvicina le scapole verso la colonna e portale leggermente verso il basso, come se le mettessi nelle tasche posteriori. Mantieni, poi lascia andare completamente. Il braccio non si muove.',
+    puntiChiave: [
+      'Il movimento è piccolo: si sente fra le scapole, non nelle braccia',
+      'Le spalle vanno indietro e in basso, non su',
+      'Lasciar andare del tutto fra una ripetizione e l’altra',
+      'Il collo resta morbido'
+    ],
+    erroriComuni: [
+      'Alzare le spalle verso le orecchie',
+      'Inarcare la zona lombare e spingere in fuori le costole',
+      'Stringere forte trattenendo il respiro',
+      'Muovere le braccia invece delle scapole'
+    ],
+    respirazione: 'Espira mentre stringi, inspira lasciando.',
+    dose: { serie: '2–3', ripetizioni: '10', tenuta: '5 secondi', frequenza: '1–2 volte al giorno' },
+    progressione: 'Con elastico leggero quando il protocollo concede la resistenza, poi in posizioni con il braccio più elevato.',
+    regressione: 'Tenuta più breve, da seduto con le braccia sostenute.',
+    precauzioni: 'Niente resistenza elastica finché non è concessa: in questa fase è un esercizio di controllo, non di forza. ' + PRECAUZIONI_CUFFIA_2,
+    doloreAmmesso: 'Nessun dolore alla spalla operata; affaticamento fra le scapole accettabile.',
+    note: 'I protocolli per lesioni ampie mettono il lavoro posturale, il rilassamento del trapezio superiore e la retrazione-depressione scapolare attiva prima ancora dell’inizio del movimento attivo assistito di spalla, perché la scapola è la base da cui parte l’elevazione. Lavorarla non carica la sutura e prepara il terreno: quando il braccio torna attivo, una scapola che non sa stabilizzarsi produce proprio quei compensi — spalla che sale, tronco che si inclina — che poi si fatica a togliere.'
+  }),
+  e({
+    nome: 'Elevazione attiva nel piano della scapola, da supino',
+    regione: 'Spalla', categoria: 'Controllo motorio',
+    protocollo: CUFFIA_2, da: '1.5',
+    obiettivo: 'Primo movimento attivo della spalla operata, con la gravità scaricata dal letto.',
+    attrezzatura: ['Lettino'],
+    posizione: 'Supino, ginocchia flesse, braccio operato lungo il fianco, pollice rivolto al soffitto.',
+    esecuzione: 'Solleva il braccio verso il soffitto con le tue forze, leggermente in avanti rispetto alla linea delle spalle, fino al limite concesso. Mantieni un istante e scendi lentamente. Se il braccio non sale da solo in modo pulito, aiutalo con l’arto sano nella sola salita e scendi da solo.',
+    puntiChiave: [
+      'Pollice verso l’alto: il movimento è nel piano della scapola, non di lato puro',
+      'Sali solo fin dove il movimento resta fluido e senza compensi',
+      'Scendere lentamente è più importante che salire in alto',
+      'Fermarsi appena la spalla comincia a salire verso l’orecchio'
+    ],
+    erroriComuni: [
+      'Partire con uno strappo per vincere il primo tratto',
+      'Trattenere il respiro nello sforzo',
+      'Insistere oltre il punto in cui compare il compenso',
+      'Passare subito alla posizione seduta'
+    ],
+    respirazione: 'Espira salendo.',
+    dose: { serie: '2–3', ripetizioni: '8–10', recupero: '30 secondi', frequenza: '1 volta al giorno', ritmo: '3 secondi in discesa' },
+    progressione: 'Aumentare l’inclinazione del busto fino alla posizione seduta, poi in piedi; infine aggiungere un carico leggero quando il protocollo lo concede.',
+    regressione: 'Salita assistita dall’arto sano e sola discesa attiva; oppure ampiezza ridotta.',
+    precauzioni: 'Nessun peso in mano in questa fase. Se il movimento attivo è possibile solo con compensi evidenti, è troppo presto. ' + PRECAUZIONI_CUFFIA_2,
+    doloreAmmesso: 'Fino a 3/10 durante, senza aumento nelle 24 ore successive.',
+    note: 'È il momento di verità del percorso: la differenza fra un’elevazione attiva pulita e una ottenuta a forza di compensi si decide qui. La posizione supina toglie quasi del tutto il momento gravitazionale e permette di isolare il controllo; la variante utile quando il braccio non parte è la salita assistita con discesa attiva, che sfrutta il lavoro eccentrico, in genere meglio tollerato della concentrica.'
+  }),
+  e({
+    nome: 'Isometrie submassimali della spalla, al fianco',
+    regione: 'Spalla', categoria: 'Rinforzo',
+    protocollo: CUFFIA_2, da: '1.5',
+    obiettivo: 'Primo carico sulla cuffia riparata, senza movimento e con intensità dosabile.',
+    attrezzatura: ['Muro'],
+    posizione: 'In piedi o seduto, gomito flesso a 90° e tenuto al fianco con un asciugamano arrotolato sotto l’ascella.',
+    esecuzione: 'Spingi contro una resistenza che non cede — il muro, la mano opposta, lo stipite — senza che il braccio si muova. Lavora in quattro direzioni, una per volta: rotazione esterna, rotazione interna, elevazione in avanti, abduzione. Spinta graduale, mantieni, poi rilascia con la stessa gradualità.',
+    puntiChiave: [
+      'Circa la metà della forza massima: è un carico, non una prova di forza',
+      'La spinta sale e scende gradualmente, mai di colpo',
+      'Il gomito resta al fianco e il tronco fermo',
+      'Respira normalmente durante la tenuta'
+    ],
+    erroriComuni: [
+      'Spingere al massimo fin dalla prima serie',
+      'Trattenere il respiro',
+      'Lasciare che il braccio si muova: diventa un altro esercizio',
+      'Cominciare dalla rotazione interna dopo sutura del sottoscapolare'
+    ],
+    respirazione: 'Normale e continua durante la tenuta.',
+    dose: { serie: '3–5', tenuta: '10–30 secondi', recupero: '30–60 secondi', frequenza: '1 volta al giorno', rpe: '4–6/10' },
+    progressione: 'Aumentare la tenuta e poi l’intensità; passare all’elastico leggero quando il protocollo apre al rinforzo dinamico, in genere dalla dodicesima settimana.',
+    regressione: 'Tenute brevi, intensità minore, solo nelle direzioni indolori.',
+    precauzioni: 'Si introduce quando il protocollo lo prevede, in genere fra l’ottava e la dodicesima settimana. Dopo sutura del sottoscapolare la rotazione interna contro resistenza resta esclusa più a lungo delle altre direzioni. ' + PRECAUZIONI_CUFFIA_2,
+    doloreAmmesso: 'Fino a 3–4/10 durante la tenuta, purché non aumenti fra una serie e l’altra e non lasci dolore notturno.',
+    note: 'L’isometria è il modo più controllabile di ricominciare a caricare: niente movimento, quindi niente arco doloroso, e intensità regolabile dal paziente stesso. I protocolli la collocano nella fase del movimento attivo, fra l’ottava e la dodicesima settimana; quelli per sutura del sottoscapolare partono dall’ottava con le isometrie di deltoide e cuffia e il lavoro contro resistenza degli stabilizzatori della scapola. Prima di aggiungere resistenza dinamica conviene che la tenuta sia indolore in tutte le direzioni concesse.'
+  }),
+
+  /* ---------- Spalla — sutura della cuffia, rinforzo e ritorno ---------- */
+  /*
+     Fase 3 (in genere dalla dodicesima settimana) e fase 4 (dalla sedicesima
+     in avanti). Qui si torna a caricare: la progressione segue i criteri —
+     movimento completo, assenza di compensi, dolore che non si trascina —
+     non il calendario.
+  */
+  e({
+    nome: 'Rotazione esterna con elastico dopo sutura di cuffia',
+    regione: 'Spalla', categoria: 'Rinforzo',
+    protocollo: CUFFIA_3, da: '1.5',
+    obiettivo: 'Rinforzare i rotatori esterni, il gruppo che più spesso resta debole dopo la riparazione.',
+    attrezzatura: ['Elastico'],
+    posizione: 'In piedi di fianco al punto di ancoraggio, gomito flesso a 90° e tenuto al fianco con un asciugamano arrotolato sotto l’ascella.',
+    esecuzione: 'Ruota l’avambraccio verso l’esterno tirando l’elastico, fermati al grado concesso, mantieni un istante e torna lentamente controllando il ritorno. Il gomito resta incollato al fianco per tutto il movimento.',
+    puntiChiave: [
+      'Si parte dall’elastico più leggero che esista, anche se sembra inutile',
+      'Il gomito non si stacca e non scivola indietro',
+      'Il ritorno frenato è la metà utile dell’esercizio',
+      'Nessun dolore durante e nessun dolore notturno dopo'
+    ],
+    erroriComuni: [
+      'Partire con un elastico da persona sana',
+      'Allontanare il gomito dal fianco',
+      'Ruotare il tronco invece della spalla',
+      'Aumentare la resistenza ogni settimana per abitudine'
+    ],
+    respirazione: 'Espira nella spinta.',
+    dose: { serie: '3', ripetizioni: '12–15', recupero: '60 secondi', frequenza: '3 volte a settimana', carico: 'elastico leggerissimo all’inizio', ritmo: '3 secondi nel ritorno', rpe: '5–6/10' },
+    progressione: 'Elastico via via più resistente; poi braccio a 45° e infine a 90° di abduzione, quando il movimento resta pulito.',
+    regressione: 'Isometria nella stessa posizione; elastico più leggero; ampiezza ridotta.',
+    precauzioni: 'Non prima della dodicesima settimana, salvo diversa indicazione. ' + PRECAUZIONI_CUFFIA_3,
+    doloreAmmesso: 'Fino a 3/10 durante, che rientra entro 24 ore. Dolore notturno nei giorni successivi significa che il carico era troppo.',
+    note: 'I protocolli collocano il rinforzo con elastico fra la decima e la tredicesima settimana, con resistenze leggere e progressione lenta. La differenza con la stessa esercitazione nel paziente non operato sta tutta nel punto di partenza e nella velocità di salita: qui il tendine ha una storia, e il criterio per aumentare è la qualità delle ultime ripetizioni, non il tempo trascorso.'
+  }),
+  e({
+    nome: 'Rotazione interna con elastico dopo sutura di cuffia',
+    regione: 'Spalla', categoria: 'Rinforzo',
+    protocollo: CUFFIA_3, da: '1.5',
+    obiettivo: 'Rinforzare i rotatori interni rispettando i tempi del sottoscapolare, quando è coinvolto.',
+    attrezzatura: ['Elastico'],
+    posizione: 'In piedi di fianco al punto di ancoraggio, con il lato operato più vicino, gomito a 90° al fianco e asciugamano sotto l’ascella.',
+    esecuzione: 'Porta l’avambraccio verso l’ombelico tirando l’elastico, mantieni un istante, poi lascia tornare lentamente fino alla posizione di partenza senza superarla verso l’esterno.',
+    puntiChiave: [
+      'Il gomito resta al fianco: non si porta avanti né indietro',
+      'Non andare oltre la posizione neutra nel ritorno',
+      'Movimento corto e pulito, non ampio',
+      'Il tronco resta fermo'
+    ],
+    erroriComuni: [
+      'Ruotare il tronco per aumentare la resistenza percepita',
+      'Lasciar tornare l’elastico di colpo oltre il neutro',
+      'Introdurla presto dopo sutura del sottoscapolare',
+      'Usarla come esercizio principale: i rotatori esterni ne hanno più bisogno'
+    ],
+    respirazione: 'Espira nella spinta.',
+    dose: { serie: '3', ripetizioni: '12–15', recupero: '60 secondi', frequenza: '3 volte a settimana', carico: 'elastico leggero', ritmo: '3 secondi nel ritorno', rpe: '5–6/10' },
+    progressione: 'Elastico più resistente; poi in posizioni con il braccio più elevato, quando concesso.',
+    regressione: 'Isometria di rotazione interna contro la mano opposta.',
+    precauzioni: 'Dopo sutura del sottoscapolare il rinforzo in rotazione interna è spesso escluso fino alla dodicesima settimana: è il tendine riparato a lavorare. ' + PRECAUZIONI_CUFFIA_3,
+    doloreAmmesso: 'Fino a 3/10 durante. Dolore in avanti, nella zona del sottoscapolare, è un segnale di stop.',
+    note: 'Dopo riparazione del sottoscapolare la rotazione interna attiva viene evitata per circa sei settimane e quella contro resistenza fino alla dodicesima: è la direzione in cui il tendine riparato tira direttamente. Nel post-operatorio del sovraspinato la cautela è minore, ma il principio resta: la direzione che mette in tensione la sutura è l’ultima a essere caricata.'
+  }),
+  e({
+    nome: 'Remata con elastico',
+    regione: 'Spalla', categoria: 'Rinforzo',
+    protocollo: CUFFIA_3, da: '1.5',
+    obiettivo: 'Rinforzare gli stabilizzatori della scapola, che reggono la spalla nei gesti quotidiani.',
+    attrezzatura: ['Elastico'],
+    posizione: 'In piedi di fronte al punto di ancoraggio, all’altezza del petto, braccia tese in avanti, piedi alla larghezza delle anche.',
+    esecuzione: 'Tira i gomiti indietro lungo i fianchi avvicinando le scapole alla colonna, mantieni un istante e torna lentamente in avanti lasciando che le scapole si distendano.',
+    puntiChiave: [
+      'Il movimento parte dalle scapole, le braccia seguono',
+      'I gomiti restano vicini al corpo',
+      'Le spalle non salgono verso le orecchie',
+      'Il ritorno è lento e completo'
+    ],
+    erroriComuni: [
+      'Tirare con le braccia tenendo le scapole bloccate',
+      'Inarcare la zona lombare e portare le costole in fuori',
+      'Alzare le spalle',
+      'Elastico troppo duro, che costringe a compensare'
+    ],
+    respirazione: 'Espira tirando.',
+    dose: { serie: '3', ripetizioni: '12', recupero: '60 secondi', frequenza: '3 volte a settimana', carico: 'elastico che rende faticose le ultime 2 ripetizioni', ritmo: '3 secondi nel ritorno', rpe: '6/10' },
+    progressione: 'Elastico più resistente; remata a un braccio solo; in appoggio su un ginocchio per togliere l’aiuto del tronco.',
+    regressione: 'Elastico più leggero; da seduto, con il tronco appoggiato.',
+    precauzioni: PRECAUZIONI_CUFFIA_3,
+    doloreAmmesso: 'Fino a 3/10, in rientro entro 24 ore.',
+    note: 'I protocolli inseriscono la remata nella fase di rinforzo, fra la decima e la sedicesima settimana, insieme a scaption e rotazione esterna. Vale come lavoro di base del cingolo: carica i muscoli che tengono la scapola senza chiedere alla cuffia riparata il gesto sopra la testa, e per molti pazienti è il primo esercizio in cui si sentono di nuovo forti, il che conta nel percorso quanto il muscolo.'
+  }),
+  e({
+    nome: 'Elevazione nel piano della scapola con carico leggero (scaption)',
+    regione: 'Spalla', categoria: 'Rinforzo',
+    protocollo: CUFFIA_3, da: '1.5',
+    obiettivo: 'Riportare forza nel gesto che serve davvero: alzare il braccio in avanti.',
+    attrezzatura: ['Manubri'],
+    posizione: 'In piedi, piedi alla larghezza delle anche, braccia lungo il corpo, un peso leggero in mano, pollice verso l’alto.',
+    esecuzione: 'Alza il braccio in avanti e leggermente di lato, a circa 30° dalla linea del corpo, fino all’altezza della spalla. Mantieni un istante e scendi lentamente. Si comincia senza peso e, quando il movimento resta pulito, si aggiunge mezzo chilo per volta.',
+    puntiChiave: [
+      'Nel piano della scapola, non di lato puro',
+      'Fermarsi all’altezza della spalla finché il protocollo non concede di più',
+      'La spalla non sale verso l’orecchio: se succede, il peso è troppo',
+      'Discesa lenta e controllata'
+    ],
+    erroriComuni: [
+      'Aggiungere peso prima di avere un movimento pulito a mani vuote',
+      'Inclinare il tronco all’indietro per aiutare la salita',
+      'Salire oltre il limite concesso',
+      'Fare molte ripetizioni veloci invece di poche lente'
+    ],
+    respirazione: 'Espira salendo.',
+    dose: { serie: '3', ripetizioni: '10–12', recupero: '60 secondi', frequenza: '3 volte a settimana', carico: 'si parte a mani vuote, poi 0,5–1 kg', ritmo: '3 secondi in discesa', rpe: '5–6/10' },
+    progressione: 'Dal movimento supino a quello in piedi, poi carico crescente e infine oltre i 90°, quando concesso.',
+    regressione: 'Senza peso; oppure da supino, dove la gravità pesa meno.',
+    precauzioni: 'Il carico si aggiunge solo con elevazione completa e indolore e senza compensi. ' + PRECAUZIONI_CUFFIA_3,
+    doloreAmmesso: 'Fino a 3/10 durante, senza dolore notturno nei giorni seguenti.',
+    note: 'La scaption progredisce dal supino all’eretto a mano a mano che l’escursione torna: è la traduzione in esercizio del gesto che il paziente aspetta di poter rifare. Il piano della scapola, circa 30° in avanti rispetto al frontale, è la direzione in cui lo spazio sotto-acromiale è più generoso e la cuffia lavora in migliore allineamento.'
+  }),
+  e({
+    nome: 'Y e T in prono per gli stabilizzatori della scapola',
+    regione: 'Spalla', categoria: 'Rinforzo',
+    protocollo: CUFFIA_3, da: '1.5',
+    obiettivo: 'Rinforzare trapezio medio e inferiore, che tengono la scapola durante i gesti sopra la testa.',
+    attrezzatura: ['Lettino'],
+    posizione: 'Prono sul letto con il braccio operato fuori dal bordo, oppure in piedi con il busto inclinato in avanti e appoggiato.',
+    esecuzione: 'T: porta il braccio di lato all’altezza della spalla, pollice verso l’alto, mantieni e scendi. Y: portalo in diagonale verso l’alto, a circa 45° dalla testa, con il pollice in alto. Il movimento parte dall’avvicinamento della scapola alla colonna.',
+    puntiChiave: [
+      'Parte la scapola, poi il braccio',
+      'Ampiezza fino all’altezza della spalla, non oltre, all’inizio',
+      'Il collo resta lungo e la spalla non sale',
+      'A mani vuote finché il movimento non è pulito'
+    ],
+    erroriComuni: [
+      'Partire con il peso',
+      'Inarcare la zona lombare per sollevare di più',
+      'Alzare la spalla verso l’orecchio',
+      'Fare la Y prima che la T sia controllata'
+    ],
+    respirazione: 'Espira salendo.',
+    dose: { serie: '2–3', ripetizioni: '10 per esercizio', tenuta: '2 secondi in alto', recupero: '60 secondi', frequenza: '2–3 volte a settimana', carico: 'a mani vuote, poi 0,5 kg', rpe: '5–6/10' },
+    progressione: 'Aggiungere un carico leggero; aumentare la tenuta; passare alla posizione in piedi inclinata senza appoggio.',
+    regressione: 'Solo T, ampiezza ridotta, con il braccio che scivola sul letto.',
+    precauzioni: 'La posizione prona può essere scomoda sulla ferita e sul torace nelle prime settimane della fase: in quel caso si usa la variante inclinata in piedi. ' + PRECAUZIONI_CUFFIA_3,
+    doloreAmmesso: 'Fino a 3/10, senza strascichi il giorno dopo.',
+    note: 'I programmi delle fasi avanzate aggiungono il lavoro periscapolare in prono, Y e T, insieme alle progressioni di spinta. Il senso è che la cuffia riparata lavora bene solo su una scapola che tiene: rinforzare l’una senza l’altra lascia a metà il recupero del gesto sopra la testa, che è quello per cui il paziente si è operato.'
+  }),
+  e({
+    nome: 'Spinte progressive in appoggio (dal muro al pavimento)',
+    regione: 'Spalla', categoria: 'Rinforzo',
+    protocollo: CUFFIA_4, da: '1.5',
+    obiettivo: 'Riportare la spalla a reggere il peso del corpo, nella fase finale del recupero.',
+    attrezzatura: ['Muro'],
+    posizione: 'Si comincia in piedi di fronte al muro, mani all’altezza delle spalle; si prosegue su un piano via via più basso — tavolo, panca — e infine a terra, in appoggio sulle ginocchia.',
+    esecuzione: 'Piega i gomiti avvicinando il petto all’appoggio, controllando la discesa, poi spingi tornando indietro. A fine spinta allontana leggermente le scapole dalla colonna, senza inarcare la schiena.',
+    puntiChiave: [
+      'Si cambia livello solo quando il precedente è indolore e pulito',
+      'Il corpo resta in linea: niente bacino che sprofonda',
+      'Gomiti vicini al corpo, non aperti a 90°',
+      'La discesa è più lenta della spinta'
+    ],
+    erroriComuni: [
+      'Passare al pavimento troppo presto',
+      'Aprire i gomiti a croce',
+      'Lasciarsi cadere nella discesa',
+      'Proseguire nonostante il dolore in avanti sulla spalla'
+    ],
+    respirazione: 'Inspira scendendo, espira spingendo.',
+    dose: { serie: '3', ripetizioni: '8–12', recupero: '60–90 secondi', frequenza: '2–3 volte a settimana', ritmo: '3 secondi in discesa', rpe: '6–7/10' },
+    progressione: 'Appoggio sempre più basso, fino al pavimento; poi piedi al posto delle ginocchia.',
+    regressione: 'Si torna all’appoggio più alto, dove il carico è minore.',
+    precauzioni: 'Il carico in appoggio sul braccio operato arriva tardi: non prima della sedicesima settimana e solo con il consenso del chirurgo, soprattutto dopo riparazioni ampie. ' + PRECAUZIONI_CUFFIA_3,
+    doloreAmmesso: 'Fino a 3/10 durante, che rientra entro 24 ore.',
+    note: 'Nei programmi delle fasi finali le progressioni di spinta compaiono insieme al lavoro periscapolare: servono a chiudere il percorso per chi deve tornare a lavori manuali, a sport di appoggio o semplicemente a rialzarsi da terra con sicurezza. Il carico in appoggio è però l’ultima cosa che una cuffia riparata è pronta a sostenere: si introduce per gradi e si abbandona senza esitazione se la spalla risponde male.'
+  }),
+  e({
+    nome: 'Ritorno al lavoro e ai gesti sopra la testa',
+    regione: 'Spalla', categoria: 'Educazione e gestione del carico',
+    protocollo: CUFFIA_4, da: '1.5',
+    obiettivo: 'Riportare la spalla alle attività reali con una progressione decisa in anticipo, invece che a tentativi.',
+    attrezzatura: ['Nessuna'],
+    posizione: 'Si applica alle attività della giornata, non a un esercizio.',
+    esecuzione: 'Scegli insieme al paziente i tre o quattro gesti che contano davvero — sollevare una cassa, stendere il bucato, lavorare con le braccia in alto, dormire sul lato operato — e affrontali uno per volta. Per ciascuno si parte da una quantità sicuramente tollerata, si tiene la stessa per qualche giorno, e si aumenta solo se nelle 24 ore successive non è cambiato nulla. Si cambia un elemento per volta: o il peso, o la durata, o l’altezza.',
+    puntiChiave: [
+      'Un gesto alla volta e un elemento alla volta: altrimenti non si sa che cosa ha fatto male',
+      'La regola delle 24 ore: se il giorno dopo la spalla è come prima, il carico era giusto',
+      'I gesti sopra la testa e il peso lontano dal corpo sono gli ultimi ad arrivare',
+      'Tornare a dormire sul lato operato è spesso l’ultimo traguardo: non è un segnale di fallimento'
+    ],
+    erroriComuni: [
+      'Riprendere tutto insieme il giorno in cui finisce la fisioterapia',
+      'Misurare il recupero sul dolore del momento invece che sulla risposta del giorno dopo',
+      'Tornare a lavori pesanti o sopra la testa senza il consenso del chirurgo',
+      'Smettere gli esercizi di rinforzo appena si sta bene'
+    ],
+    respirazione: 'Non pertinente.',
+    dose: { frequenza: 'rivalutazione ogni 1–2 settimane' },
+    progressione: 'Criteri ricorrenti per considerare chiuso il percorso: escursione completa e indolore nei gesti richiesti, forza entro il 10% del lato sano, nessun compenso visibile, dolore 0–2/10 nell’attività, e via libera del chirurgo. Per lo sport i tempi riportati vanno dai 4 ai 9 mesi secondo la lesione e la disciplina.',
+    regressione: 'Si torna all’ultimo livello tollerato e si riparte da lì, senza considerarlo un passo indietro.',
+    precauzioni: 'Il ritorno a sport di lancio, a lavori sopra la testa e al carico pesante passa dal chirurgo. Un dolore che ricompare con il carico dopo mesi di quiete merita una rivalutazione, non solo più esercizi. ' + CHIRURGO,
+    doloreAmmesso: '0–2/10 nelle attività, senza dolore notturno.',
+    note: 'I criteri di dimissione che ricorrono nei protocolli sono tre: escursione completa e indolore nel gesto richiesto, forza confrontabile con il lato sano — spesso entro il 10% — e un test funzionale superato senza compensi. Il calendario serve a pianificare, i criteri a decidere. Questa voce esiste perché la parte del percorso in cui si perdono i risultati non è la riabilitazione, ma le settimane subito dopo, quando il paziente è lasciato solo a dosare.'
   }),
 
   /* ---------- Ginocchio e anca ---------- */

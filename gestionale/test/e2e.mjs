@@ -535,11 +535,22 @@ await step('protocollo: filtro, scheda e cautele', async () => {
   // La tendina dei protocolli e' l'ultima delle tre: regione, tipo, protocollo.
   const tendine = page.locator('.search-bar select');
   if (await tendine.count() !== 3) throw new Error('manca la tendina dei protocolli: ' + await tendine.count());
+  const attesi = await page.evaluate(async () => {
+    const es = await import('/app/js/schema/esercizi.js');
+    return es.CATALOGO.filter(x => x.protocollo === es.PROTOCOLLI_CUFFIA[0]).length;
+  });
+  if (attesi < 4) throw new Error('la prima fase del protocollo e troppo corta: ' + attesi);
   await tendine.nth(2).selectOption({ index: 1 });
   await page.waitForTimeout(200);
   const righe = await page.locator('.tbl tbody tr').allTextContents();
-  if (righe.length !== 4) throw new Error('il protocollo deve contenere 4 esercizi, trovati ' + righe.length);
-  if (!righe.some(r => /Codman/.test(r))) throw new Error('Codman non compare nel protocollo: ' + JSON.stringify(righe));
+  if (righe.length !== attesi) throw new Error('il filtro deve mostrare ' + attesi + ' esercizi, trovati ' + righe.length);
+  for (const atteso of ['Codman', 'gomito', 'collo']) {
+    if (!righe.some(r => new RegExp(atteso, 'i').test(r))) throw new Error('nel protocollo manca ' + atteso + ': ' + JSON.stringify(righe));
+  }
+  // Il protocollo tiene insieme esercizi di regioni diverse: filtrando per
+  // protocollo devono restare, filtrando per regione no.
+  const regioni = await page.locator('.tbl tbody tr td:nth-child(3)').allTextContents();
+  if (new Set(regioni.map(r => r.trim())).size < 2) throw new Error('il protocollo dovrebbe attraversare piu\u2019 regioni: ' + JSON.stringify(regioni));
 
   // La scheda deve riportare il protocollo e le cautele post-operatorie.
   await page.click('.tbl tbody tr:has-text("Codman")');
@@ -560,15 +571,16 @@ await step('scheda da spuntare: selezione e file da inviare', async () => {
   // Filtrando per protocollo, la spunta in testata prende tutti quelli elencati.
   await page.locator('.search-bar select').nth(2).selectOption({ index: 1 });
   await page.waitForTimeout(200);
+  const quanti = await page.locator('.tbl tbody tr').count();
   await page.locator('.tbl thead input[type=checkbox]').check();
   await page.waitForTimeout(200);
   const barra = await page.locator('.sel-barra').innerText();
-  if (!/4 esercizi scelti/.test(barra)) throw new Error('barra della selezione: ' + barra.replace(/\s+/g, ' '));
+  if (!new RegExp(quanti + ' esercizi scelti').test(barra)) throw new Error('barra della selezione: ' + barra.replace(/\s+/g, ' '));
 
   // Togliendone uno il conto scende: la spunta singola comanda.
   await page.locator('.tbl tbody tr input[type=checkbox]').first().uncheck();
   await page.waitForTimeout(200);
-  if (!/3 esercizi scelti/.test(await page.locator('.sel-barra').innerText())) throw new Error('la spunta singola non toglie dalla selezione');
+  if (!new RegExp((quanti - 1) + ' esercizi scelti').test(await page.locator('.sel-barra').innerText())) throw new Error('la spunta singola non toglie dalla selezione');
   await page.locator('.tbl tbody tr input[type=checkbox]').first().check();
   await page.waitForTimeout(200);
 
@@ -785,8 +797,12 @@ await step('libreria gia’ esistente: arrivano solo gli esercizi nuovi', async 
     const tutti = await db.all('esercizi');
     return { nomi: tutti.map(x => x.nome).sort(), quanti: tutti.length };
   });
-  // I due di prima piu' i quattro del protocollo: nient'altro.
-  if (dopo.quanti !== 6) throw new Error('attesi 6 esercizi, trovati ' + dopo.quanti + ': ' + JSON.stringify(dopo.nomi));
+  // I due di prima piu' tutte le voci che dichiarano la versione di ingresso.
+  const nuoveAttese = await p1.evaluate(async () => {
+    const es = await import('/app/js/schema/esercizi.js');
+    return es.CATALOGO.filter(v => v.da).length;
+  });
+  if (dopo.quanti !== 2 + nuoveAttese) throw new Error('attesi ' + (2 + nuoveAttese) + ' esercizi, trovati ' + dopo.quanti);
   if (!dopo.nomi.includes('Esercizio mio')) throw new Error('un esercizio proprio e stato perso');
   if (!dopo.nomi.some(n => /Codman/.test(n))) throw new Error('il protocollo non e arrivato: ' + JSON.stringify(dopo.nomi));
   if (dopo.nomi.some(n => /Cat-camel/.test(n))) throw new Error('sono tornate voci del vecchio catalogo mai richieste');
@@ -795,7 +811,7 @@ await step('libreria gia’ esistente: arrivano solo gli esercizi nuovi', async 
   await p1.goto(BASE + '#/esercizi', { waitUntil: 'networkidle' });
   await p1.waitForTimeout(500);
   const ancora = await p1.evaluate(async () => (await (await import('/app/js/db.js')).all('esercizi')).length);
-  if (ancora !== 6) throw new Error('la riapertura ha duplicato: ' + ancora);
+  if (ancora !== dopo.quanti) throw new Error('la riapertura ha duplicato: ' + ancora + ' invece di ' + dopo.quanti);
   await ctx.close();
 });
 

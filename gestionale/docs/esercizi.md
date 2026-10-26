@@ -62,27 +62,52 @@ stesso testo si tengono insieme:
 Il campo è facoltativo e si scrive a mano: scegli tu i nomi e le fasi. Conviene ripetere
 lo stesso testo identico, altrimenti i filtri vedono due protocolli diversi.
 
-### Sutura della cuffia dei rotatori — fase 1 (passiva)
+### Sutura della cuffia dei rotatori
 
-Il catalogo comprende i quattro esercizi di questa fase: *elevazione assistita dall'arto
-sano da supino*, *elevazione delle scapole da seduto (spallucce)*, *esercizi pendolari di
-Codman*, *abduzione passiva con bastone da supino*. L'idea comune è muovere la spalla
-senza far lavorare i tendini suturati: il motore è l'arto sano o il tronco, mai la cuffia
-operata. Nelle **note** di ciascuno c'è il razionale, che resta per te e non finisce sulla
+Il catalogo comprende il percorso completo, diviso in quattro fasi che sono quattro
+protocolli distinti. Filtrando per protocollo hai davanti solo la fase che ti serve.
+
+| Fase | Quando, di solito | Che cosa contiene |
+|---|---|---|
+| **1 — passiva** | 0–6 settimane, con tutore | Elevazione assistita dall'arto sano da supino · abduzione passiva con bastone · rotazione esterna passiva con bastone · pendolari di Codman · spallucce · **flesso-estensione di gomito** · mano e polso · mobilità del collo · gestione di tutore, sonno e postura |
+| **2 — attiva assistita** | ~6–12 settimane | Elevazione assistita con bastone da supino a seduto · carrucola · risalita al muro · retrazione e depressione scapolare · elevazione attiva nel piano della scapola da supino · isometrie submassimali |
+| **3 — rinforzo** | dalla ~12ª settimana | Rotazione esterna e interna con elastico · remata · scaption con carico leggero · Y e T in prono |
+| **4 — ritorno alle attività** | dalla ~16ª settimana | Spinte progressive in appoggio · ritorno al lavoro e ai gesti sopra la testa, con i criteri di dimissione |
+
+Il filo di tutto il percorso: nella fase 1 il motore è l'arto sano o il tronco, mai la
+cuffia operata; nella 2 il movimento diventa attivo ma senza carico; nella 3 si carica per
+gradi; nella 4 si torna ai gesti veri, un elemento per volta. Il protocollo attraversa più
+regioni (spalla, gomito, polso e mano, rachide cervicale) proprio perché il tutore
+irrigidisce anche quello che non è stato operato.
+
+Nelle **note** di ciascun esercizio c'è il razionale, che resta per te e non finisce sulla
 scheda del paziente.
 
-I gradi indicati (per esempio 90–120° di elevazione, 60–90° di abduzione) e i tempi sono
-quelli più comuni delle prime settimane: **il riferimento resta il protocollo del
-chirurgo**, che cambia con il tendine suturato, la dimensione della lesione e la tecnica.
-Con sutura del sottoscapolare, rotazione esterna ed estensione restano limitate più a
-lungo. Modifica i quattro esercizi di conseguenza: sono voci di libreria come tutte le
-altre.
+**I numeri sono un punto di partenza, non una prescrizione.** Le settimane e i gradi
+indicati (90–120° di elevazione, 60–90° di abduzione, rotazione esterna a 0° o 30–45°)
+sono quelli che ricorrono nei protocolli pubblicati, che fra loro divergono parecchio. Il
+riferimento resta il **protocollo del chirurgo**, che cambia con il tendine suturato, la
+dimensione della lesione e la tecnica. Con sutura del sottoscapolare la rotazione esterna
+resta spesso bloccata a 0° per 4–6 settimane e la rotazione interna contro resistenza
+arriva solo dopo la dodicesima. Modifica le voci di conseguenza: sono esercizi di libreria
+come tutti gli altri.
+
+**Da dove viene questo contenuto.** Protocolli post-operatori pubblicati da più centri
+(MOON/Vanderbilt e Iowa, Lahey, University of Utah, Dartmouth-Hitchcock, Golden State,
+Shoreline, Sanford Health, Hughston, Christ Hospital), più le revisioni sull'avvio precoce
+del movimento (Riboh e Garrigues 2014; Shen 2014; Hu 2023) e gli studi EMG e cinematici
+sui pendolari (Ellsworth 2006; Cunningham e Charbonnier). Due avvertenze oneste: nessuno
+di questi protocolli è una linea guida con grading delle prove, e **non è stata trovata
+una linea guida italiana sulla riabilitazione post-operatoria della cuffia** — le linee
+guida SICSeG riguardano la scelta chirurgica, non il recupero. Dove le fonti divergono, il
+testo lo dice invece di scegliere per te.
 
 ## Il catalogo di partenza
 
-Alla prima apertura la libreria contiene **26 esercizi** su rachide lombare e cervicale,
-spalla (compresi i quattro del protocollo di cuffia), anca, ginocchio, caviglia,
-equilibrio e vestibolo, più alcuni generali (respirazione, cammino).
+Alla prima apertura la libreria contiene **44 esercizi** su rachide lombare e cervicale,
+spalla, gomito, polso e mano, anca, ginocchio, caviglia, equilibrio e vestibolo, più
+alcuni generali (respirazione, cammino). Ventidue di questi formano il protocollo
+post-operatorio di cuffia, diviso nelle sue quattro fasi.
 
 Servono a non partire dal vuoto. **Sono modificabili, duplicabili e cancellabili** come
 qualsiasi altro: la dose indicata è un punto di partenza ragionevole, non una prescrizione,
