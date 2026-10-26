@@ -1,0 +1,112 @@
+/* ============================================================
+   Stampa: fatture cartacee, cartella clinica, consensi
+   ============================================================ */
+@page { size: A4; margin: 14mm 14mm 16mm; }
+
+@media print {
+  :root { color-scheme: light; }
+  html, body { background: #fff !important; color: #000 !important; }
+  .app, .toast-root, #modalRoot { display: none !important; }
+
+  .print-root {
+    display: block !important;
+    font-family: "Helvetica Neue", Arial, sans-serif;
+    font-size: 10.5pt;
+    line-height: 1.42;
+    color: #000;
+  }
+  .print-root a { color: #000; text-decoration: none; }
+  .doc { page-break-after: always; }
+  .doc:last-child { page-break-after: auto; }
+  .page-break { page-break-before: always; }
+  .avoid-break { page-break-inside: avoid; }
+}
+
+/* Stili condivisi (validi anche in anteprima a schermo) */
+/* La dimensione di base del documento e' il perno dell'adattamento a una
+   pagina: i figli sono espressi in em, quindi ridurla scala tutto il blocco.
+   La imposta print.js dopo aver misurato l'altezza reale. */
+:is(.print-root, .print-preview) .doc { max-width: 180mm; margin: 0 auto 10mm; font-size: 10.5pt; }
+
+:is(.print-root, .print-preview) .doc-head { display: flex; justify-content: space-between; gap: 12mm; align-items: flex-start; border-bottom: 1.5pt solid #000; padding-bottom: .8em; margin-bottom: 1.2em; }
+:is(.print-root, .print-preview) .issuer { font-size: .905em; line-height: 1.35; }
+:is(.print-root, .print-preview) .issuer .issuer-name { font-size: 1.143em; font-weight: 700; letter-spacing: .01em; }
+:is(.print-root, .print-preview) .issuer .issuer-role { font-size: .857em; font-style: italic; margin-bottom: 1.5mm; }
+:is(.print-root, .print-preview) .doc-title { text-align: right; }
+:is(.print-root, .print-preview) .doc-title h1 { font-size: 1.43em; margin: 0 0 1mm; letter-spacing: .04em; text-transform: uppercase; }
+:is(.print-root, .print-preview) .doc-title .doc-meta { font-size: .952em; }
+:is(.print-root, .print-preview) .doc-title .copy-mark { font-size: .81em; text-transform: uppercase; letter-spacing: .1em; border: .8pt solid #000; padding: .5mm 2mm; display: inline-block; margin-top: 1.5mm; }
+
+:is(.print-root, .print-preview) .party { border: .8pt solid #000; padding: .8em; margin-bottom: 1.2em; }
+:is(.print-root, .print-preview) .party .party-label { font-size: .762em; text-transform: uppercase; letter-spacing: .1em; margin-bottom: 1.5mm; }
+:is(.print-root, .print-preview) .party .party-name { font-weight: 700; font-size: 1.048em; }
+
+:is(.print-root, .print-preview) table.inv { width: 100%; border-collapse: collapse; margin-bottom: 4mm; }
+:is(.print-root, .print-preview) table.inv th { border-bottom: 1pt solid #000; border-top: 1pt solid #000; padding: .55em .35em; font-size: .81em; text-transform: uppercase; letter-spacing: .05em; text-align: left; }
+:is(.print-root, .print-preview) table.inv td { padding: .5em .35em; border-bottom: .4pt solid #999; vertical-align: top; font-size: .952em; }
+:is(.print-root, .print-preview) table.inv .num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+:is(.print-root, .print-preview) table.inv .cnt { text-align: center; }
+
+:is(.print-root, .print-preview) .totals { width: 78mm; margin-left: auto; }
+:is(.print-root, .print-preview) .totals div { display: flex; justify-content: space-between; padding: .3em 0; font-size: .952em; }
+:is(.print-root, .print-preview) .totals .grand { border-top: 1pt solid #000; border-bottom: 2.5pt double #000; font-weight: 700; font-size: 1.143em; margin-top: .25em; padding: .5em 0; }
+:is(.print-root, .print-preview) .totals .num { font-variant-numeric: tabular-nums; }
+
+:is(.print-root, .print-preview) .notes { font-size: .81em; line-height: 1.4; margin-top: 1.4em; border-top: .4pt solid #999; padding-top: 2.5mm; }
+:is(.print-root, .print-preview) .notes p { margin: 0 0 1.2mm; }
+:is(.print-root, .print-preview) .stamp-box { float: right; width: 42mm; height: 24mm; border: .6pt dashed #666; text-align: center; font-size: .667em; color: #444; padding-top: 10mm; margin-left: 6mm; }
+:is(.print-root, .print-preview) .sign-row { display: flex; justify-content: space-between; margin-top: 2.6em; gap: 10mm; }
+:is(.print-root, .print-preview) .sign-col { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; }
+:is(.print-root, .print-preview) .sign { flex: 0 0 auto; border-top: .6pt solid #000; padding-top: .4em; font-size: .81em; text-align: center; }
+/* Una sola firma: resta a destra e a mezza larghezza, non un rigo lungo tutta la pagina. */
+:is(.print-root, .print-preview) .sign-row-single { justify-content: flex-end; }
+:is(.print-root, .print-preview) .sign-row-single .sign-col { flex: 0 0 48%; }
+
+/* Cartella clinica / consensi */
+:is(.print-root, .print-preview) .rec-title { text-align: center; margin-bottom: 5mm; }
+:is(.print-root, .print-preview) .rec-title h1 { font-size: 14pt; margin: 0; text-transform: uppercase; letter-spacing: .05em; }
+:is(.print-root, .print-preview) .rec-title .sub { font-size: 9pt; }
+:is(.print-root, .print-preview) h2.sec-h { font-size: 10.5pt; text-transform: uppercase; letter-spacing: .06em; background: #eee; padding: 1.5mm 2mm; margin: 5mm 0 2.5mm; border-left: 2.5pt solid #000; page-break-after: avoid; }
+:is(.print-root, .print-preview) h3.sub-h { font-size: 10pt; margin: 3mm 0 1.5mm; page-break-after: avoid; }
+:is(.print-root, .print-preview) .kv { display: grid; grid-template-columns: 52mm 1fr; gap: .8mm 3mm; font-size: 9.5pt; margin-bottom: 2mm; }
+:is(.print-root, .print-preview) .kv dt { font-weight: 700; }
+:is(.print-root, .print-preview) .kv dd { margin: 0; white-space: pre-wrap; }
+:is(.print-root, .print-preview) .blk { margin-bottom: 2.5mm; font-size: 9.5pt; }
+:is(.print-root, .print-preview) .blk .blk-l { font-weight: 700; }
+:is(.print-root, .print-preview) .blk .blk-v { white-space: pre-wrap; }
+:is(.print-root, .print-preview) table.grid-t { width: 100%; border-collapse: collapse; font-size: 9pt; margin-bottom: 3mm; }
+:is(.print-root, .print-preview) table.grid-t th, :is(.print-root, .print-preview) table.grid-t td { border: .5pt solid #666; padding: 1.2mm 1.8mm; text-align: left; vertical-align: top; }
+:is(.print-root, .print-preview) table.grid-t th { background: #eee; font-size: 8pt; text-transform: uppercase; }
+:is(.print-root, .print-preview) .consent-body { font-size: .952em; line-height: 1.45; text-align: justify; }
+:is(.print-root, .print-preview) .consent-body li { margin-bottom: .35em; }
+:is(.print-root, .print-preview) .consent-body p { margin: 0 0 .5em; }
+:is(.print-root, .print-preview) .consent-body ol, :is(.print-root, .print-preview) .consent-body ul { margin: 0 0 .5em; }
+:is(.print-root, .print-preview) .flag-red { font-weight: 700; }
+:is(.print-root, .print-preview) .footer-note { font-size: 7.5pt; color: #444; border-top: .4pt solid #999; margin-top: 6mm; padding-top: 1.5mm; }
+
+/* Anteprima a schermo del documento stampabile */
+.print-preview { background: #fff; color: #000; padding: 14mm; border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); overflow-x: auto; }
+.print-preview .doc { max-width: none; }
+
+/* ---------- Esercizi: scheda e programma per il paziente ---------- */
+:is(.print-root, .print-preview) .ex {
+  border: .6pt solid #999; border-radius: 2mm;
+  padding: 3mm 3.5mm; margin-bottom: 3.5mm;
+}
+:is(.print-root, .print-preview) .ex-nome { margin: 0 0 1mm; font-size: 1.12em; }
+:is(.print-root, .print-preview) .ex-obiettivo { font-style: italic; margin-bottom: 2mm; }
+:is(.print-root, .print-preview) .ex-foto { display: flex; gap: 3mm; margin-bottom: 2.5mm; }
+:is(.print-root, .print-preview) .ex-foto figure { margin: 0; flex: 1; max-width: 48%; }
+:is(.print-root, .print-preview) .ex-foto img { width: 100%; height: auto; border: .4pt solid #bbb; }
+:is(.print-root, .print-preview) .ex-foto figcaption { font-size: .78em; text-align: center; margin-top: .5mm; }
+:is(.print-root, .print-preview) .ex-riga { display: flex; gap: 2.5mm; margin-bottom: 1.2mm; align-items: baseline; }
+:is(.print-root, .print-preview) .ex-lbl {
+  flex: 0 0 26mm; font-weight: 700; font-size: .84em;
+  text-transform: uppercase; letter-spacing: .03em;
+}
+:is(.print-root, .print-preview) .ex-ul { margin: 0; padding-left: 4mm; }
+:is(.print-root, .print-preview) .ex-dose { margin-top: 1.8mm; padding-top: 1.2mm; border-top: .4pt dotted #999; }
+:is(.print-root, .print-preview) .ex-url { word-break: break-all; font-size: .88em; }
+:is(.print-root, .print-preview) .note-box {
+  border-left: 1.2pt solid #333; padding: 1.5mm 0 1.5mm 3mm; margin-bottom: 3.5mm;
+}

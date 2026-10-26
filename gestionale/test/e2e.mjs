@@ -1,0 +1,870 @@
+/* ============================================================
+   Test end-to-end dell'interfaccia.
+   Percorre il flusso completo: paziente -> episodio -> cartella
+   -> seduta -> PROM -> fattura -> incasso -> backup -> stampa.
+
+   Richiede Playwright (non incluso tra le dipendenze) e il server
+   gia' avviato:
+
+     npm start                       # in un terminale
+     npm i -D playwright             # una tantum
+     node test/e2e.mjs               # in un altro terminale
+   ============================================================ */
+import { chromium } from 'playwright';
+
+const BASE = 'http://127.0.0.1:4321/';
+const errors = [];
+const browser = await chromium.launch();
+const contesto = await browser.newContext({ acceptDownloads: true });
+const page = await contesto.newPage();
+page.on('console', m => { if (m.type() === 'error') errors.push('CONSOLE: ' + m.text()); });
+page.on('pageerror', e => errors.push('PAGEERROR: ' + e.message + '\n' + (e.stack||'').split('\n').slice(0,4).join('\n')));
+
+const step = async (nome, fn) => {
+  try { await fn(); console.log('ok   ' + nome); }
+  catch (e) { console.log('FAIL ' + nome + ': ' + e.message); errors.push('STEP ' + nome + ': ' + e.message); }
+};
+
+/* Accende una pastiglia dentro una sezione precisa e attende che risulti
+   accesa. La sezione va indicata perche' la stessa voce compare in piu' punti
+   della cartella (per esempio "Diplopia" sta sia nello screening cervicale sia
+   nei segnali di allarme vestibolari). L'attesa serve perche' le pastiglie
+   vengono ridisegnate a ogni scelta: un clic caduto in quell'istante non
+   salverebbe nulla, in silenzio. Si attende lo stato invece di ricliccare,
+   perche' un secondo clic la spegnerebbe. */
+const accendiPastiglia = async (sezione, testo) => {
+  const sez = page.locator(sezione);
+  await sez.locator('.chip-opt', { hasText: testo }).first().click();
+  await sez.locator('.chip-opt[aria-checked="true"]', { hasText: testo }).first()
+    .waitFor({ timeout: 5000 })
+    .catch(() => { throw new Error('la pastiglia non si attiva: ' + testo + ' in ' + sezione); });
+};
+
+/* Attende che il salvataggio automatico sia arrivato in archivio, nella sezione
+   attesa. Aspettare un tempo fisso piu' lungo del rinvio di salvataggio rende
+   il test incostante; controllare la sezione accerta che il valore sia finito
+   dove deve. */
+const attendiInCartella = (sezione, frammento) => page.waitForFunction(async ([s, f]) => {
+  const db = await import('/app/js/db.js');
+  const ep = (await db.all('episodi'))[0];
+  return JSON.stringify(ep?.cartella?.[s] || {}).includes(f);
+}, [sezione, frammento], { timeout: 8000 })
+  .catch(() => { throw new Error('il valore ' + frammento + ' non risulta salvato in ' + sezione); });
+
+await page.goto(BASE, { waitUntil: 'networkidle' });
+
+await step('cruscotto caricato', async () => {
+  await page.waitForSelector('.stat, .card h2', { timeout: 5000 });
+  const t = await page.textContent('#view');
+  if (!/Benvenuto|Pazienti attivi/.test(t)) throw new Error('contenuto inatteso: ' + t.slice(0,120));
+});
+
+await step('navigazione pazienti', async () => {
+  await page.click('a[data-nav="/pazienti"]');
+  await page.waitForSelector('button:has-text("Nuovo paziente")', { timeout: 5000 });
+});
+
+await step('creazione paziente', async () => {
+  await page.click('button:has-text("Nuovo paziente")');
+  await page.waitForSelector('.modal');
+  const campi = page.locator('.modal input[type=text]');
+  await page.locator('.modal .field:has(label:text-is("Cognome *")) input').fill('rossi');
+  await page.locator('.modal .field:has(label:text-is("Nome *")) input').fill('mario');
+  await page.locator('.modal .field:has(label:text-is("Codice fiscale")) input').fill('RSSMRA80A01H501U');
+  await page.locator('.modal .field:has(label:text-is("Codice fiscale")) input').blur();
+  await page.waitForTimeout(150);
+  const nascita = await page.locator('.modal .field:has(label:text-is("Data di nascita")) input').inputValue();
+  if (nascita !== '1980-01-01') throw new Error('data di nascita non precompilata dal CF: ' + nascita);
+  await page.click('.modal-foot button:has-text("Salva")');
+  await page.waitForSelector('h1:has-text("Rossi Mario")', { timeout: 5000 });
+});
+
+await step('creazione episodio', async () => {
+  await page.click('button:has-text("Nuovo episodio")');
+  await page.waitForSelector('.modal');
+  await page.fill('.modal input[type=text]', 'Lombalgia acuta destra');
+  await page.selectOption('.modal select', 'Lombare');
+  await page.click('.modal-foot button:has-text("Crea")');
+  await page.waitForSelector('h1:has-text("Lombalgia acuta destra")', { timeout: 5000 });
+});
+
+await step('la cartella si apre sull’anteprima', async () => {
+  await page.waitForSelector('.anteprima', { timeout: 5000 });
+  if (!/Sola lettura/.test(await page.textContent('#view'))) throw new Error('anteprima non mostrata all’apertura');
+});
+
+await step('compilazione esame soggettivo', async () => {
+  // Dall'anteprima si passa alla scheda di compilazione.
+  await page.click('.tabs button:has-text("Esame soggettivo")');
+  await page.click('details.sec:has-text("Body chart") > summary');
+  await page.waitForSelector('.bodychart svg');
+  const box = await page.locator('.bodychart-canvas svg').first().boundingBox();
+  await page.mouse.click(box.x + box.width * 0.55, box.y + box.height * 0.45);
+  await page.waitForSelector('.bodychart-side .card', { timeout: 3000 });
+  // NPRS
+  await page.locator('.field:has(label:text-is("NPRS attuale")) input[type=range]').fill('7');
+  const v = await page.locator('.field:has(label:text-is("NPRS attuale")) .scale-val').textContent();
+  if (v !== '7') throw new Error('scala NPRS non aggiornata: ' + v);
+});
+
+await step('selezione multipla a pastiglie (accumula, non sostituisce)', async () => {
+  // Regressione: lo stato veniva letto da una variabile catturata al primo
+  // disegno, quindi le pastiglie non si evidenziavano e ogni clic sostituiva
+  // la scelta precedente invece di aggiungersi.
+  await page.click('.tabs button:has-text("Esame soggettivo")').catch(() => {});
+  // Aprire la sezione solo se e' chiusa: un clic incondizionato sul titolo la
+  // richiuderebbe quando il passaggio precedente l'ha gia' lasciata aperta.
+  const sezione = page.locator('details.sec:has-text("Body chart")').first();
+  if (!await sezione.evaluate(d => d.open)) await sezione.locator('> summary').click();
+  const campo = page.locator('.field:has(label:text-is("Qualità del sintomo"))');
+  for (const o of ['Profondo', 'Urente/bruciante', 'Trafittivo']) {
+    await campo.locator(`.chip-opt:text-is("${o}")`).click();
+    await page.waitForTimeout(120);
+  }
+  const attive = await campo.locator('.chip-opt.on').allTextContents();
+  if (attive.length !== 3) throw new Error('attese 3 pastiglie attive senza ricaricare, trovate: ' + JSON.stringify(attive));
+
+  // Un secondo clic deseleziona soltanto quella voce.
+  await campo.locator('.chip-opt:text-is("Trafittivo")').click();
+  await page.waitForTimeout(120);
+  const dopo = await campo.locator('.chip-opt.on').allTextContents();
+  if (dopo.length !== 2 || dopo.includes('Trafittivo')) throw new Error('deselezione errata: ' + JSON.stringify(dopo));
+
+  // E il dato salvato deve coincidere con quanto mostrato.
+  await page.waitForTimeout(900);
+  const salvate = await page.evaluate(async () => {
+    const db = await import('/app/js/db.js');
+    const ep = (await db.all('episodi'))[0];
+    return ep.cartella?.soggettivo?.bodychart?.tipoDolore || [];
+  });
+  if (salvate.length !== 2) throw new Error('in archivio attese 2 voci, trovate: ' + JSON.stringify(salvate));
+});
+
+await step('sezione vestibolare e anteprima', async () => {
+  await page.click('.tabs button:has-text("Equilibrio e vestibolo")');
+  await page.waitForSelector('details.sec:has-text("Segnali di allarme")', { timeout: 5000 });
+  await page.click('details.sec:has-text("Segnali di allarme") > summary');
+  await accendiPastiglia('details.sec:has-text("Segnali di allarme e sospetto")', 'Diplopia');
+  await attendiInCartella('vestAllarme', 'Diplopia');
+  await page.click('.tabs button:has-text("Anteprima")');
+  await page.waitForSelector('.anteprima .ant-voce', { timeout: 5000 });
+  const t = await page.textContent('.anteprima');
+  if (!/Equilibrio e vestibolo/.test(t)) throw new Error('la parte vestibolare non compare in anteprima');
+  if (!/Diplopia/.test(t)) throw new Error('il valore inserito non compare in anteprima');
+  if (!await page.locator('.anteprima .ant-allerta').count()) throw new Error('il campo di allerta non è evidenziato');
+});
+
+await step('bandiere rosse evidenziate', async () => {
+  await page.click('.tabs button:has-text("Esame soggettivo")').catch(()=>{});
+  await page.waitForSelector('details.sec:has-text("Domande speciali")', { timeout: 5000 });
+  await page.click('details.sec:has-text("Domande speciali") > summary');
+  await accendiPastiglia('details.sec:has-text("Domande speciali")', 'Storia di neoplasia');
+  await attendiInCartella('redflags', 'Storia di neoplasia');
+  await page.reload({ waitUntil: 'networkidle' });
+  await page.waitForSelector('.alert.danger', { timeout: 5000 });
+  const t = await page.textContent('.alert.danger');
+  if (!/neoplasia/i.test(t)) throw new Error('banner allerte non mostra il reperto: ' + t);
+});
+
+/* Perdita di dati silenziosa: si scriveva in una scheda e si cambiava scheda
+   prima che scattasse il salvataggio rinviato. La cartella veniva ricostruita
+   rileggendo l'episodio ancora vecchio e il salvataggio successivo riportava
+   indietro la modifica appena fatta. */
+await step('modifica e cambio scheda immediato: nulla va perso', async () => {
+  await page.click('.tabs button:has-text("Esame soggettivo")');
+  await page.waitForSelector('details.sec:has-text("Domande speciali")', { timeout: 5000 });
+  await page.click('details.sec:has-text("Domande speciali") > summary');
+  await accendiPastiglia('details.sec:has-text("Domande speciali")', 'Febbre');
+  // Subito in un'altra scheda, senza attendere il salvataggio.
+  await page.click('.tabs button:has-text("Equilibrio e vestibolo")');
+  await page.waitForSelector('details.sec:has-text("Segnali di allarme e sospetto")', { timeout: 5000 });
+  await page.click('details.sec:has-text("Segnali di allarme e sospetto") > summary');
+  await accendiPastiglia('details.sec:has-text("Segnali di allarme e sospetto")', 'Disartria');
+
+  await attendiInCartella('vestAllarme', 'Disartria');
+  await attendiInCartella('redflags', 'Febbre');
+  // E quanto inserito prima non deve essere tornato indietro.
+  await attendiInCartella('redflags', 'Storia di neoplasia');
+  await attendiInCartella('vestAllarme', 'Diplopia');
+});
+
+await step('asterischi e seduta SOAP', async () => {
+  await page.click('.tabs button:has-text("Diagnosi")');
+  await page.click('details.sec:has-text("Asterischi") > summary');
+  await page.click('button:has-text("+ Aggiungi riga")');
+  await page.locator('.sec-body table.tbl tbody tr td').first().locator('input').fill('Flessione lombare');
+  await page.locator('.sec-body table.tbl tbody tr td').first().locator('input').blur();
+  await page.waitForTimeout(900);
+
+  await page.click('.tabs button:has-text("Sedute")');
+  await page.click('button:has-text("+ Nuova seduta")');
+  await page.waitForSelector('.modal');
+  const t = await page.textContent('.modal-body');
+  if (!/Flessione lombare/.test(t)) throw new Error('asterisco non riproposto nella rivalutazione della seduta');
+  await page.locator('.modal .field:has(label:text-is("NPRS attuale")) input[type=range]').fill('4');
+  await page.click('.modal-head button[aria-label="Chiudi"]');
+  await page.waitForTimeout(800);
+  await page.waitForSelector('table.tbl tbody tr:has-text("4/10")', { timeout: 5000 });
+});
+
+await step('questionario PROM con punteggio', async () => {
+  await page.click('.tabs button:has-text("Questionari")');
+  await page.click('button:has-text("+ Compila questionario")');
+  await page.waitForSelector('.modal');
+  await page.click('.modal button:has-text("ODI")');
+  await page.waitForSelector('.modal:has-text("Oswestry")');
+  const selects = page.locator('.modal-body select');
+  const n = await selects.count();
+  for (let i = 0; i < n; i++) await selects.nth(i).selectOption('2').catch(()=>{});
+  const res = await page.textContent('.modal-body .alert.info');
+  if (!/40%/.test(res)) throw new Error('punteggio ODI atteso 40%, ottenuto: ' + res);
+  await page.click('.modal-foot button:has-text("Salva")');
+  await page.waitForSelector('.card:has-text("Oswestry")', { timeout: 5000 });
+});
+
+await step('supporto al ragionamento', async () => {
+  await page.click('.tabs button:has-text("Supporto")');
+  await page.waitForSelector('.alert.info:has-text("non una diagnosi")', { timeout: 5000 });
+  const t = await page.textContent('#view');
+  for (const atteso of ['Meccanismo del dolore', 'Ipotesi in ordine di sostegno', 'Come condurre l’esame fisico']) {
+    if (!t.includes(atteso)) throw new Error('manca la sezione: ' + atteso);
+  }
+  // Il caso di prova ha una bandiera rossa (storia di neoplasia): deve emergere
+  // almeno un elemento da considerare prima di procedere.
+  const ipotesi = await page.locator('.card:has(h3:text-is("Ipotesi in ordine di sostegno")) details.sec').count();
+  const allerte = await page.locator('.alert.danger, .alert.warn').count();
+  if (ipotesi === 0 && allerte === 0) throw new Error('né ipotesi né allerte prodotte');
+
+  // Il pulsante deve scrivere davvero in cartella.
+  if (ipotesi > 0) {
+    await page.click('button:has-text("Usa come ipotesi principale")');
+    await page.waitForTimeout(600);
+    const scritta = await page.evaluate(async () => {
+      const db = await import('/app/js/db.js');
+      const ep = (await db.all('episodi'))[0];
+      return ep.cartella?.ipotesi?.ragionamentoPre?.ipotesiPrincipale || '';
+    });
+    if (!scritta.includes('Elementi a sostegno')) throw new Error('ipotesi non inserita in cartella: ' + scritta.slice(0, 80));
+  }
+});
+
+await step('impostazioni studio', async () => {
+  await page.click('a[data-nav="/impostazioni"]');
+  await page.waitForSelector('h2:has-text("Dati riportati")');
+  await page.locator('.field:has(label:text-is("Cognome")) input').fill('Bianchi');
+  await page.locator('.field:has(label:text-is("Nome")) input').fill('Laura');
+  await page.locator('.field:has(label:text-is("Indirizzo dello studio")) input').fill('Via Roma 1');
+  await page.locator('.field:has(label:text-is("Città")) input').fill('Palermo');
+  await page.click('button:has-text("Salva impostazioni")');
+  await page.waitForTimeout(400);
+  await page.click('.tabs button:has-text("Fisco")');
+  await page.waitForSelector('h2:has-text("Dati fiscali")');
+  await page.locator('.field:has(label:text-is("Partita IVA")) input').fill('00743110157');
+  await page.click('button:has-text("Salva impostazioni")');
+  await page.waitForTimeout(400);
+  const err = await page.locator('.toast.err').count();
+  if (err) throw new Error('errore nel salvataggio impostazioni: ' + await page.textContent('.toast.err'));
+});
+
+await step('partita IVA non valida rifiutata', async () => {
+  await page.locator('.field:has(label:text-is("Partita IVA")) input').fill('00743110158');
+  await page.click('button:has-text("Salva impostazioni")');
+  await page.waitForSelector('.toast.err', { timeout: 3000 });
+  await page.locator('.field:has(label:text-is("Partita IVA")) input').fill('00743110157');
+  await page.click('button:has-text("Salva impostazioni")');
+  await page.waitForTimeout(400);
+});
+
+await step('creazione fattura da sedute', async () => {
+  await page.click('a[data-nav="/fatture"]');
+  await page.waitForSelector('button:has-text("Nuova fattura")');
+  await page.click('button:has-text("+ Nuova fattura")');
+  await page.waitForSelector('.modal select');
+  const val = await page.locator('.modal select option').nth(1).getAttribute('value');
+  await page.selectOption('.modal select', val);
+  await page.click('.modal-foot button:has-text("Continua")');
+  await page.waitForSelector('h1:has-text("(bozza)")', { timeout: 5000 });
+  await page.click('button:has-text("+ Sedute non fatturate")');
+  await page.waitForSelector('.modal');
+  await page.click('.modal-foot button:has-text("Aggiungi")');
+  await page.waitForTimeout(600);
+  const t = await page.textContent('.card:has(h3:text-is("Totali"))');
+  if (!/Imponibile/.test(t)) throw new Error('pannello totali non popolato');
+});
+
+await step('bollo applicato oltre soglia', async () => {
+  const righe = page.locator('.card:has(h3:text-is("Prestazioni")) table.tbl tbody tr');
+  await righe.first().locator('input[type=number]').nth(1).fill('100');
+  await righe.first().locator('input[type=number]').nth(1).dispatchEvent('input');
+  await page.waitForTimeout(300);
+  const t = await page.textContent('.card:has(h3:text-is("Totali"))');
+  if (!/Bollo addebitato/.test(t)) throw new Error('bollo non applicato sopra soglia: ' + t.replace(/\s+/g,' '));
+  if (!/102,00/.test(t)) throw new Error('totale atteso 102,00: ' + t.replace(/\s+/g,' '));
+});
+
+await step('emissione con numerazione progressiva', async () => {
+  await page.click('button:has-text("Emetti e numera")');
+  await page.waitForSelector('.modal');
+  await page.click('.modal-foot button:has-text("Emetti")');
+  await page.waitForSelector('h1:has-text("1/")', { timeout: 5000 });
+  const badge = await page.textContent('.card-head .badge');
+  if (!/emessa/.test(badge)) throw new Error('stato non aggiornato: ' + badge);
+});
+
+await step('il numero del documento è modificabile', async () => {
+  await page.click('button:has-text("✎ numero")');
+  await page.waitForSelector('.modal');
+  await page.fill('.modal input[type=number]', '7');
+  await page.click('.modal-foot button:has-text("Salva numero")');
+  await page.waitForSelector('h1:has-text("7/")', { timeout: 5000 });
+  const salvato = await page.evaluate(async () => {
+    const db = await import('/app/js/db.js');
+    return (await db.all('fatture')).find(f => f.numero)?.numero;
+  });
+  if (salvato !== 7) throw new Error('numero non salvato: ' + salvato);
+
+  // Il numero successivo deve tenere conto della rinumerazione, senza duplicati.
+  const prossimo = await page.evaluate(async () => {
+    const db = await import('/app/js/db.js');
+    return db.anteprimaNumeroFattura(new Date().getFullYear());
+  });
+  if (prossimo !== 8) throw new Error('il contatore non si è riallineato: ' + prossimo);
+});
+
+await step('anteprima di stampa contiene i riferimenti di legge', async () => {
+  const t = await page.textContent('.print-preview');
+  for (const atteso of ['art. 10, n. 18', 'Bianchi', 'Rossi Mario', '190/2014', 'D.P.R. 642/1972']) {
+    if (!t.includes(atteso)) throw new Error('manca in fattura: ' + atteso);
+  }
+});
+
+await step('registrazione incasso e stato', async () => {
+  await page.click('button:has-text("Registra incasso")');
+  await page.waitForSelector('.modal');
+  await page.click('.modal-foot button:has-text("Registra")');
+  await page.waitForTimeout(700);
+  const t = await page.textContent('.card:has(h3:text-is("Totali"))');
+  if (!/Incassata/.test(t)) throw new Error('stato non passato a incassata: ' + t.replace(/\s+/g,' '));
+});
+
+await step('registro incassi aggiornato', async () => {
+  await page.click('a[data-nav="/incassi"]');
+  await page.waitForSelector('.stat-value');
+  const t = await page.textContent('#view');
+  if (!/102,00/.test(t)) throw new Error('incasso non presente nel registro');
+  if (!/Tutte le fatture emesse risultano incassate/.test(t)) throw new Error('crediti aperti non azzerati');
+});
+
+await step('agenda: nuovo appuntamento nella settimana', async () => {
+  await page.click('a[data-nav="/agenda"]');
+  await page.waitForSelector('.settimana', { timeout: 5000 });
+  await page.click('button:has-text("+ Nuovo appuntamento")');
+  await page.waitForSelector('.modal');
+  const val = await page.locator('.modal .field:has(label:text-is("Paziente *")) option').nth(1).getAttribute('value');
+  await page.selectOption('.modal .field:has(label:text-is("Paziente *")) select', val);
+  await page.fill('.modal .field:has(label:text-is("Ora")) input', '11:30');
+  // L'anteprima deve mostrare che nel calendario esterno finiscono le sole iniziali.
+  const anteprima = await page.textContent('.modal .field:has(.hint) .hint').catch(() => '');
+  if (anteprima && !/FT — R\.M\.|FT — M\.R\./.test(anteprima)) {
+    throw new Error('etichetta calendario non riservata: ' + anteprima);
+  }
+  await page.click('.modal-foot button:has-text("Salva")');
+  await page.waitForTimeout(600);
+  const t = await page.textContent('.settimana');
+  if (!/11:30/.test(t) || !/Rossi Mario/.test(t)) throw new Error('appuntamento non visibile in agenda: ' + t.replace(/\s+/g, ' ').slice(0, 160));
+});
+
+await step('agenda: link a Google Calendar corretto', async () => {
+  await page.click('.settimana .appunt');
+  await page.waitForSelector('.modal');
+  const url = await page.evaluate(async () => {
+    const cal = await import('/app/js/calendario.js');
+    const db = await import('/app/js/db.js');
+    const a = (await db.all('appuntamenti'))[0];
+    const p = await db.byId('pazienti', a.pazienteId);
+    return cal.linkGoogleCalendar(a, p, await db.getImpostazioni());
+  });
+  const u = new URL(url);
+  if (u.host !== 'calendar.google.com') throw new Error('host errato: ' + u.host);
+  if (!/^\d{8}T\d{6}\/\d{8}T\d{6}$/.test(u.searchParams.get('dates') || '')) {
+    throw new Error('intervallo malformato: ' + u.searchParams.get('dates'));
+  }
+  if (/Rossi/.test(u.searchParams.get('text') || '')) throw new Error('il titolo predefinito non deve riportare il cognome');
+  await page.click('.modal-head button[aria-label="Chiudi"]');
+});
+
+await step('la Home si chiama Home', async () => {
+  const voci = await page.locator('#nav a').allTextContents();
+  if (!voci.some(v => v.includes('Home'))) throw new Error('voce Home assente: ' + JSON.stringify(voci));
+  if (voci.some(v => /Cruscotto/.test(v))) throw new Error('la vecchia voce Cruscotto è ancora presente');
+});
+
+await step('backup e ripristino', async () => {
+  await page.click('a[data-nav="/impostazioni"]');
+  await page.click('.tabs button:has-text("Dati e backup")');
+  await page.waitForSelector('h2:has-text("Backup")');
+  const [dl] = await Promise.all([
+    page.waitForEvent('download'),
+    page.click('button:has-text("Scarica backup completo")')
+  ]);
+  const path = await dl.path();
+  const { readFileSync } = await import('node:fs');
+  const b = JSON.parse(readFileSync(path, 'utf8'));
+  if (b.data.pazienti.length !== 1) throw new Error('backup incompleto: ' + JSON.stringify(Object.keys(b.data)));
+  // Il documento è stato rinumerato a 7 nel passaggio precedente: il backup deve rispecchiarlo.
+  if (b.data.fatture[0].numero !== 7) throw new Error('numero fattura errato nel backup: ' + b.data.fatture[0].numero);
+  if (!b.data.appuntamenti?.length) throw new Error('appuntamenti assenti dal backup');
+});
+
+await step('stampa cartella clinica', async () => {
+  await page.goto(BASE + '#/pazienti', { waitUntil: 'networkidle' });
+  await page.click('table.tbl tbody tr');
+  await page.waitForSelector('h1:has-text("Rossi Mario")');
+  await page.click('table.tbl tbody tr');
+  await page.waitForSelector('.tabs button:has-text("Esame soggettivo")');
+  await page.evaluate(() => { window.print = () => { window.__stampato = document.getElementById('printRoot').textContent; }; });
+  await page.click('button:has-text("Stampa cartella")');
+  await page.waitForTimeout(400);
+  const t = await page.evaluate(() => window.__stampato || '');
+  for (const atteso of ['Cartella clinica fisioterapica', 'Rossi Mario', 'Storia di neoplasia', 'Oswestry', 'art. 9 Reg. UE 2016/679']) {
+    if (!t.includes(atteso)) throw new Error('manca nella stampa: ' + atteso + ' | estratto: ' + t.slice(0, 200));
+  }
+});
+
+await step('importazione da CSV: riconoscimento, anteprima e scrittura', async () => {
+  // File di prova nel formato dell'export di Zoho Invoice.
+  const { writeFileSync, mkdtempSync } = await import('node:fs');
+  const { join } = await import('node:path');
+  const { tmpdir } = await import('node:os');
+  const cartella = mkdtempSync(join(tmpdir(), 'ompt-import-'));
+  const percorso = join(cartella, 'Invoice.csv');
+  writeFileSync(percorso, [
+    '"Invoice Date","Invoice Number","Invoice Status","Customer Name","Item Desc","Quantity","Item Price","Total"',
+    '"15/01/2026","INV-000900","Paid","Bianchi Carla","Valutazione fisioterapica","1","70,00","222,00"',
+    '"15/01/2026","INV-000900","Paid","Bianchi Carla","Seduta di terapia manuale","3","50,00","222,00"',
+    '"03/02/2026","INV-000901","Sent","Bianchi Carla","Seduta di terapia manuale","2","50,00","100,00"'
+  ].join('\r\n'), 'utf8');
+
+  await page.goto(BASE + '#/importa', { waitUntil: 'networkidle' });
+  await page.waitForSelector('button:has-text("Apri un file CSV")');
+  const [chooser] = await Promise.all([
+    page.waitForEvent('filechooser'),
+    page.click('button:has-text("Apri un file CSV")')
+  ]);
+  await chooser.setFiles(percorso);
+  await page.waitForSelector('.card:has-text("Controlla il risultato")', { timeout: 5000 });
+
+  // Il tracciato dev'essere riconosciuto da solo.
+  const tipo = await page.locator('.field:has(label:text-is("Tipo di file")) select').inputValue();
+  if (tipo !== 'fatture') throw new Error('tracciato non riconosciuto: ' + tipo);
+
+  // Due righe con lo stesso numero devono diventare un solo documento con due voci.
+  const testo = await page.textContent('.card:has-text("Controlla il risultato")');
+  if (!/2 elementi/.test(testo)) throw new Error('attesi 2 documenti: ' + testo.replace(/\s+/g, ' ').slice(0, 160));
+  if (!/INV-000900/.test(testo)) throw new Error('numero di origine non mostrato');
+
+  await page.click('button:has-text("Importa 2 elementi")');
+  await page.waitForSelector('.modal');
+  await page.click('.modal-foot button:has-text("Importa")');
+  await page.waitForSelector('.card:has-text("Esito")', { timeout: 5000 });
+
+  const scritte = await page.evaluate(async () => {
+    const db = await import('/app/js/db.js');
+    const { calcolaTotali, numeroCompleto } = await import('/app/js/fatture.js');
+    const imp = await db.getImpostazioni();
+    const f = (await db.all('fatture')).filter(x => x.numeroTesto?.startsWith('INV-0009'));
+    return f.map(x => ({
+      n: numeroCompleto(x),
+      voci: x.righe.length,
+      totale: calcolaTotali(x, imp).nettoAPagare
+    })).sort((a, b) => a.n.localeCompare(b.n));
+  });
+  if (scritte.length !== 2) throw new Error('documenti scritti: ' + JSON.stringify(scritte));
+  if (scritte[0].voci !== 2) throw new Error('voci non raggruppate: ' + JSON.stringify(scritte[0]));
+  // Il totale di origine va conservato: 222 con bollo, 100 senza.
+  if (scritte[0].totale !== 222) throw new Error('totale con bollo non conservato: ' + scritte[0].totale);
+  if (scritte[1].totale !== 100) throw new Error('totale senza bollo non conservato: ' + scritte[1].totale);
+
+  // Il progressivo del gestionale non dev'essere toccato dall'archivio storico.
+  const prossimo = await page.evaluate(async () => {
+    const db = await import('/app/js/db.js');
+    return db.anteprimaNumeroFattura(2026);
+  });
+  if (prossimo !== 8) throw new Error('il progressivo è stato alterato dall’import: ' + prossimo);
+});
+
+await step('libreria esercizi: catalogo di partenza e filtri', async () => {
+  await page.goto(BASE + '#/esercizi', { waitUntil: 'networkidle' });
+  await page.waitForSelector('.tbl tbody tr', { timeout: 5000 });
+  const tutte = await page.locator('.tbl tbody tr').count();
+  if (tutte < 20) throw new Error('catalogo di partenza troppo corto: ' + tutte);
+  // Il catalogo va seminato una volta sola, anche quando la semina all'avvio e
+  // quella della pagina partono insieme.
+  const doppioni = await page.evaluate(async () => {
+    const db = await import('/app/js/db.js');
+    const nomi = (await db.all('esercizi')).map(x => x.nome);
+    return nomi.filter((n, i) => nomi.indexOf(n) !== i);
+  });
+  if (doppioni.length) throw new Error('catalogo seminato piu\u2019 volte: ' + JSON.stringify(doppioni.slice(0, 3)));
+
+  // Il filtro per regione e la ricerca libera devono restringere l'elenco.
+  await page.locator('.search-bar select').first().selectOption('Rachide lombare');
+  await page.waitForTimeout(150);
+  const lombari = await page.locator('.tbl tbody tr').count();
+  if (!(lombari > 0 && lombari < tutte)) throw new Error('filtro per regione inefficace: ' + lombari + '/' + tutte);
+
+  await page.locator('.search-bar input[type=search]').fill('bird dog');
+  await page.waitForTimeout(150);
+  const righe = await page.locator('.tbl tbody tr').allTextContents();
+  if (righe.length !== 1 || !/Bird dog/i.test(righe[0])) throw new Error('ricerca in libreria: ' + JSON.stringify(righe));
+});
+
+await step('scheda dell’esercizio con esecuzione e dose', async () => {
+  await page.click('.tbl tbody tr');
+  await page.waitForSelector('h1:has-text("Bird dog")', { timeout: 5000 });
+  const testo = await page.textContent('#view');
+  for (const atteso of ['Come si esegue', 'Dosaggio', 'Punti chiave']) {
+    if (!testo.includes(atteso)) throw new Error('manca il blocco «' + atteso + '» nella scheda');
+  }
+});
+
+await step('protocollo: filtro, scheda e cautele', async () => {
+  await page.goto(BASE + '#/esercizi', { waitUntil: 'networkidle' });
+  await page.reload({ waitUntil: 'networkidle' });   // azzera i filtri del passaggio precedente
+  await page.waitForSelector('.tbl tbody tr', { timeout: 5000 });
+  // La tendina dei protocolli e' l'ultima delle tre: regione, tipo, protocollo.
+  const tendine = page.locator('.search-bar select');
+  if (await tendine.count() !== 3) throw new Error('manca la tendina dei protocolli: ' + await tendine.count());
+  const attesi = await page.evaluate(async () => {
+    const es = await import('/app/js/schema/esercizi.js');
+    return es.CATALOGO.filter(x => x.protocollo === es.PROTOCOLLI_CUFFIA[0]).length;
+  });
+  if (attesi < 4) throw new Error('la prima fase del protocollo e troppo corta: ' + attesi);
+  await tendine.nth(2).selectOption({ index: 1 });
+  await page.waitForTimeout(200);
+  const righe = await page.locator('.tbl tbody tr').allTextContents();
+  if (righe.length !== attesi) throw new Error('il filtro deve mostrare ' + attesi + ' esercizi, trovati ' + righe.length);
+  for (const atteso of ['Codman', 'gomito', 'collo']) {
+    if (!righe.some(r => new RegExp(atteso, 'i').test(r))) throw new Error('nel protocollo manca ' + atteso + ': ' + JSON.stringify(righe));
+  }
+  // Il protocollo tiene insieme esercizi di regioni diverse: filtrando per
+  // protocollo devono restare, filtrando per regione no.
+  const regioni = await page.locator('.tbl tbody tr td:nth-child(3)').allTextContents();
+  if (new Set(regioni.map(r => r.trim())).size < 2) throw new Error('il protocollo dovrebbe attraversare piu\u2019 regioni: ' + JSON.stringify(regioni));
+
+  // La scheda deve riportare il protocollo e le cautele post-operatorie.
+  await page.click('.tbl tbody tr:has-text("Codman")');
+  await page.waitForSelector('h1:has-text("Codman")', { timeout: 5000 });
+  const scheda = await page.textContent('#view');
+  for (const atteso of ['Sutura della cuffia dei rotatori', 'chirurgo', 'Precauzioni', 'Dolore ammesso']) {
+    if (!scheda.includes(atteso)) throw new Error('nella scheda manca: ' + atteso);
+  }
+  // Il razionale per il terapista sta nelle note, non nella scheda del paziente.
+  if (!/sovraspinato/i.test(scheda)) throw new Error('manca il razionale nelle note');
+});
+
+await step('scheda da spuntare: selezione e file da inviare', async () => {
+  await page.goto(BASE + '#/esercizi', { waitUntil: 'networkidle' });
+  await page.reload({ waitUntil: 'networkidle' });
+  await page.waitForSelector('.tbl tbody tr', { timeout: 5000 });
+
+  // Filtrando per protocollo, la spunta in testata prende tutti quelli elencati.
+  await page.locator('.search-bar select').nth(2).selectOption({ index: 1 });
+  await page.waitForTimeout(200);
+  const quanti = await page.locator('.tbl tbody tr').count();
+  await page.locator('.tbl thead input[type=checkbox]').check();
+  await page.waitForTimeout(200);
+  const barra = await page.locator('.sel-barra').innerText();
+  if (!new RegExp(quanti + ' esercizi scelti').test(barra)) throw new Error('barra della selezione: ' + barra.replace(/\s+/g, ' '));
+
+  // Togliendone uno il conto scende: la spunta singola comanda.
+  await page.locator('.tbl tbody tr input[type=checkbox]').first().uncheck();
+  await page.waitForTimeout(200);
+  if (!new RegExp((quanti - 1) + ' esercizi scelti').test(await page.locator('.sel-barra').innerText())) throw new Error('la spunta singola non toglie dalla selezione');
+  await page.locator('.tbl tbody tr input[type=checkbox]').first().check();
+  await page.waitForTimeout(200);
+
+  await page.click('.sel-barra button:has-text("Scheda per il paziente")');
+  await page.waitForSelector('.modal', { timeout: 5000 });
+  await page.fill('.modal input[type=text]', 'Rossi Mario');
+  await page.fill('.modal textarea', 'Due volte al giorno, mattina e sera.');
+
+  const [scaricato] = await Promise.all([
+    page.waitForEvent('download'),
+    page.click('.modal-foot button:has-text("Scarica il file")')
+  ]);
+  const nome = scaricato.suggestedFilename();
+  if (!/^esercizi-rossi-mario-\d{4}-\d{2}-\d{2}\.html$/.test(nome)) throw new Error('nome del file: ' + nome);
+
+  // Il file deve bastare a se stesso: niente richieste esterne, tutto dentro.
+  const percorso = await scaricato.path();
+  const html = await (await import('node:fs/promises')).readFile(percorso, 'utf8');
+  for (const atteso of ['Rossi Mario', 'Due volte al giorno', 'Codman', 'spallucce', '<style', '@media print']) {
+    if (!html.includes(atteso)) throw new Error('nel file manca: ' + atteso);
+  }
+  if (/(src|href)="(?!data:)[a-z]+:/i.test(html)) throw new Error('il file dipende da risorse esterne');
+  if (/<link\b/i.test(html) || /<script\b/i.test(html)) throw new Error('il file non deve caricare fogli di stile o script');
+
+  // E deve aprirsi da solo, senza rete e senza il gestionale.
+  const fuori = await browser.newContext({ offline: true, viewport: { width: 390, height: 800 } });
+  const pagina = await fuori.newPage();
+  await pagina.goto('file://' + percorso, { waitUntil: 'load' });
+  const testo = await pagina.locator('body').innerText();
+  for (const atteso of ['Rossi Mario', 'Codman', 'Esercizi pendolari']) {
+    if (!testo.includes(atteso)) throw new Error('aprendo il file manca: ' + atteso);
+  }
+  const overflow = await pagina.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  if (overflow > 2) throw new Error('sul telefono il file scorre di lato: ' + overflow + 'px');
+  await fuori.close();
+});
+
+await step('programma: scelta dalla libreria e dose personalizzata', async () => {
+  const idEp = await page.evaluate(async () => (await (await import('/app/js/db.js')).all('episodi'))[0].id);
+  await page.goto(BASE + '#/cartella/' + idEp + '/esercizi', { waitUntil: 'networkidle' });
+  await page.waitForSelector('h2:has-text("Programma di esercizi")', { timeout: 5000 });
+
+  await page.click('button:has-text("+ Aggiungi esercizio")');
+  await page.waitForSelector('.modal .scelta-riga', { timeout: 5000 });
+  await page.locator('.modal input[type=search]').fill('bird dog');
+  await page.waitForTimeout(150);
+  await page.locator('.modal .scelta-riga button:has-text("+ Aggiungi")').first().click();
+  await page.waitForTimeout(150);
+  // Riaggiungere lo stesso esercizio non deve essere possibile.
+  if (!await page.locator('.modal .scelta-riga:has-text("già nel programma")').count()) {
+    throw new Error('un esercizio già inserito resta riaggiungibile');
+  }
+  await page.click('.modal-foot button:has-text("Chiudi")');
+
+  await page.waitForSelector('.prog-voce', { timeout: 5000 });
+  await page.click('.prog-voce details.sec > summary');
+  // La dose di libreria compare come valore, non come segnaposto vuoto.
+  const serie = page.locator('.prog-voce .field:has(label:text-is("Serie")) input');
+  if (await serie.inputValue() !== '3') throw new Error('dose di libreria non proposta: ' + await serie.inputValue());
+
+  // Personalizzando, in archivio finisce solo ciò che si discosta dalla libreria.
+  await serie.fill('2');
+  await serie.blur();
+  await page.waitForTimeout(900);
+  const voce = await page.evaluate(async () => {
+    const db = await import('/app/js/db.js');
+    return (await db.all('episodi'))[0].programma?.voci?.[0];
+  });
+  if (voce?.dose?.serie !== '2') throw new Error('dose personalizzata non salvata: ' + JSON.stringify(voce));
+  if ('ripetizioni' in (voce.dose || {})) throw new Error('la dose uguale alla libreria non va duplicata: ' + JSON.stringify(voce.dose));
+});
+
+await step('scheda degli esercizi da consegnare al paziente', async () => {
+  await page.fill('.card:has(h2:text-is("Programma di esercizi")) textarea', 'Tre volte a settimana, senza dolore oltre 3/10.');
+  await page.click('button:has-text("👁 Anteprima")');
+  await page.waitForSelector('.modal .doc', { timeout: 5000 });
+  const doc = await page.textContent('.modal .doc');
+  if (!/Bird dog/.test(doc)) throw new Error('esercizio assente dalla scheda');
+  if (!/2 × 8 per lato/.test(doc)) throw new Error('dose effettiva non stampata: ' + doc.replace(/\s+/g, ' ').slice(0, 200));
+  if (!/Rossi Mario/.test(doc)) throw new Error('intestazione senza il paziente');
+  await page.click('.modal-foot button:has-text("Chiudi")');
+});
+
+await step('modello di seduta: salvataggio e riuso', async () => {
+  const idEp = await page.evaluate(async () => (await (await import('/app/js/db.js')).all('episodi'))[0].id);
+  await page.goto(BASE + '#/cartella/' + idEp + '/sedute', { waitUntil: 'networkidle' });
+  await page.waitForSelector('.tbl tbody tr', { timeout: 5000 });
+  await page.click('.tbl tbody tr');
+  await page.waitForSelector('.modal', { timeout: 5000 });
+  await page.click('.modal-foot button:has-text("Salva come modello")');
+  await page.waitForSelector('.modal:has-text("Nome del modello")', { timeout: 5000 });
+  await page.locator('.modal:has-text("Nome del modello") input[type=text]').fill('Terapia manuale lombare');
+  await page.click('.modal:has-text("Nome del modello") .modal-foot button:has-text("Salva")');
+  await page.waitForTimeout(300);
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(200);
+
+  const prima = await page.locator('.tbl tbody tr').count();
+  await page.click('button:has-text("Da modello")');
+  await page.waitForSelector('.modal:has-text("Nuova seduta da modello")', { timeout: 5000 });
+  await page.click('.modal .scelta-riga:has-text("Terapia manuale lombare") button:has-text("Usa")');
+  await page.waitForSelector('.modal:has-text("Seduta")', { timeout: 5000 });
+  await page.waitForTimeout(600);
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(400);
+
+  const dopo = await page.evaluate(async () => {
+    const db = await import('/app/js/db.js');
+    const s = (await db.all('sedute')).sort((a, b) => (b.numero || 0) - (a.numero || 0))[0];
+    return { n: (await db.all('sedute')).length, dati: s.dati };
+  });
+  if (dopo.n !== prima + 1) throw new Error('la seduta da modello non è stata creata: ' + dopo.n);
+  if (!JSON.stringify(dopo.dati || {}).length || JSON.stringify(dopo.dati) === '{}') {
+    throw new Error('il modello non ha precompilato i campi SOAP');
+  }
+});
+
+await step('ricerca globale con Ctrl+K', async () => {
+  await page.goto(BASE, { waitUntil: 'networkidle' });
+  await page.keyboard.press('Control+k');
+  await page.waitForSelector('.ric-input', { timeout: 5000 });
+  await page.fill('.ric-input', 'rossi');
+  await page.waitForTimeout(200);
+  const voci = await page.locator('.ric-voce').allTextContents();
+  if (!voci.some(v => /Rossi Mario/.test(v))) throw new Error('il paziente non compare fra i risultati: ' + JSON.stringify(voci));
+
+  await page.fill('.ric-input', 'bird dog');
+  await page.waitForTimeout(200);
+  const eser = await page.locator('.ric-voce').allTextContents();
+  if (!eser.some(v => /Bird dog/i.test(v))) throw new Error('la libreria esercizi non è cercabile: ' + JSON.stringify(eser));
+
+  // Invio apre il primo risultato.
+  await page.keyboard.press('Enter');
+  await page.waitForSelector('h1:has-text("Bird dog")', { timeout: 5000 });
+});
+
+await step('copia automatica su disco scritta dal server', async () => {
+  await page.goto(BASE + '#/impostazioni', { waitUntil: 'networkidle' });
+  await page.click('.tabs button:has-text("Dati e backup")').catch(() => {});
+  await page.waitForSelector('h2:has-text("Copia automatica su disco")', { timeout: 5000 });
+  await page.click('button:has-text("Salva una copia adesso")');
+  // Si attende il toast di questa operazione: quello del passaggio precedente
+  // puo' essere ancora a schermo.
+  await page.waitForSelector('.toast:has-text("Copia")', { timeout: 8000 });
+  const avviso = await page.textContent('.toast:has-text("Copia")');
+  if (!/Copia salvata/.test(avviso)) throw new Error('copia non riuscita: ' + avviso);
+
+  // Il file dev'essere davvero sul disco e contenere i pazienti.
+  const esito = await page.evaluate(async () => {
+    const r = await fetch('/api/backup');
+    const j = await r.json();
+    return { n: j.file?.length || 0, ultimo: j.file?.[0]?.byte || 0 };
+  });
+  if (!esito.n) throw new Error('nessun file nella cartella di backup');
+  if (esito.ultimo < 500) throw new Error('copia sospettosamente piccola: ' + esito.ultimo + ' byte');
+});
+
+await step('episodi fermi in Home', async () => {
+  // Si arretra l'ultima seduta oltre la soglia: l'episodio dev'essere richiamato.
+  await page.evaluate(async () => {
+    const db = await import('/app/js/db.js');
+    const vecchia = new Date(Date.now() - 70 * 24 * 3600 * 1000).toISOString().slice(0, 10);
+    for (const s of await db.all('sedute')) await db.put('sedute', { ...s, data: vecchia });
+    for (const a of await db.all('appuntamenti')) await db.del('appuntamenti', a.id);
+  });
+  await page.goto(BASE, { waitUntil: 'networkidle' });
+  await page.waitForSelector('.card:has-text("Episodi fermi")', { timeout: 5000 });
+  const riquadro = await page.textContent('.card:has-text("Episodi fermi")');
+  if (!/Rossi Mario/.test(riquadro)) throw new Error('episodio fermo non elencato: ' + riquadro.replace(/\s+/g, ' ').slice(0, 160));
+  if (!/settimane/.test(riquadro)) throw new Error('manca da quanto è fermo');
+});
+
+await step('responsive a 400px', async () => {
+  await page.setViewportSize({ width: 400, height: 800 });
+  await page.goto(BASE + '#/incassi', { waitUntil: 'networkidle' });
+  await page.waitForTimeout(400);
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  if (overflow > 2) throw new Error('scroll orizzontale di ' + overflow + 'px');
+});
+
+/* Chi aggiorna ha gia' la libreria piena: le voci nuove del catalogo devono
+   arrivare comunque, senza duplicati e senza far ricomparire cio' che era stato
+   cancellato a mano. Contesto separato, con una libreria finta piu' vecchia. */
+await step('libreria gia’ esistente: arrivano solo gli esercizi nuovi', async () => {
+  const ctx = await browser.newContext();
+  const prep = BASE + '__prep-libreria';
+  await ctx.route(prep, r => r.fulfill({ contentType: 'text/html', body: '<!doctype html><title>prep</title>' }));
+  const p0 = await ctx.newPage();
+  await p0.goto(prep);
+  // Libreria di una versione precedente: due esercizi, nessun registro di
+  // semina, e nessuna traccia dei quattro del protocollo.
+  await p0.evaluate(async () => {
+    const stores = ['settings', 'pazienti', 'episodi', 'sedute', 'appuntamenti',
+      'fatture', 'incassi', 'esercizi', 'modelliSeduta', 'contatori'];
+    await new Promise((res, rej) => {
+      const r = indexedDB.open('gestionale-ompt', 3);
+      r.onupgradeneeded = () => {
+        for (const s of stores) if (!r.result.objectStoreNames.contains(s)) r.result.createObjectStore(s, { keyPath: 'id' });
+        const os = r.transaction.objectStore('esercizi');
+        os.put({ id: 'v1', nome: 'Bird dog', regione: 'Rachide lombare', categoria: 'Controllo motorio', esecuzione: 'x', origine: 'catalogo' });
+        os.put({ id: 'v2', nome: 'Esercizio mio', regione: 'Spalla', categoria: 'Rinforzo', esecuzione: 'x', origine: 'mio' });
+      };
+      r.onsuccess = () => { r.result.close(); res(); };
+      r.onerror = () => rej(r.error);
+    });
+  });
+  await p0.close();
+
+  const p1 = await ctx.newPage();
+  await p1.goto(BASE + '#/esercizi', { waitUntil: 'networkidle' });
+  await p1.waitForSelector('.tbl tbody tr', { timeout: 5000 });
+  const dopo = await p1.evaluate(async () => {
+    const db = await import('/app/js/db.js');
+    const tutti = await db.all('esercizi');
+    return { nomi: tutti.map(x => x.nome).sort(), quanti: tutti.length };
+  });
+  // I due di prima piu' tutte le voci che dichiarano la versione di ingresso.
+  const nuoveAttese = await p1.evaluate(async () => {
+    const es = await import('/app/js/schema/esercizi.js');
+    return es.CATALOGO.filter(v => v.da).length;
+  });
+  if (dopo.quanti !== 2 + nuoveAttese) throw new Error('attesi ' + (2 + nuoveAttese) + ' esercizi, trovati ' + dopo.quanti);
+  if (!dopo.nomi.includes('Esercizio mio')) throw new Error('un esercizio proprio e stato perso');
+  if (!dopo.nomi.some(n => /Codman/.test(n))) throw new Error('il protocollo non e arrivato: ' + JSON.stringify(dopo.nomi));
+  if (dopo.nomi.some(n => /Cat-camel/.test(n))) throw new Error('sono tornate voci del vecchio catalogo mai richieste');
+
+  // Riaprendo non si duplica nulla.
+  await p1.goto(BASE + '#/esercizi', { waitUntil: 'networkidle' });
+  await p1.waitForTimeout(500);
+  const ancora = await p1.evaluate(async () => (await (await import('/app/js/db.js')).all('esercizi')).length);
+  if (ancora !== dopo.quanti) throw new Error('la riapertura ha duplicato: ' + ancora + ' invece di ' + dopo.quanti);
+  await ctx.close();
+});
+
+/* Archivio lasciato da una copia piu' recente del gestionale: una volta
+   impediva l'avvio ("lower version than the existing version"). Si svolge in
+   un contesto separato per non toccare i dati usati dai passaggi precedenti. */
+await step('archivio di una versione piu recente: si apre comunque', async () => {
+  const ctx = await browser.newContext();
+  const prep = BASE + '__prep-versione';
+  await ctx.route(prep, r => r.fulfill({ contentType: 'text/html', body: '<!doctype html><title>prep</title>' }));
+  const p0 = await ctx.newPage();
+  await p0.goto(prep);
+  // Archivio a versione 9 con tutti gli store di oggi piu' uno sconosciuto,
+  // come lo lascerebbe una versione futura, e un paziente dentro.
+  await p0.evaluate(async () => {
+    const stores = ['settings', 'pazienti', 'episodi', 'sedute', 'appuntamenti',
+      'fatture', 'incassi', 'esercizi', 'modelliSeduta', 'contatori', 'inventato'];
+    await new Promise((res, rej) => {
+      const r = indexedDB.open('gestionale-ompt', 9);
+      r.onupgradeneeded = () => {
+        for (const s of stores) if (!r.result.objectStoreNames.contains(s)) r.result.createObjectStore(s, { keyPath: 'id' });
+        r.transaction.objectStore('pazienti').put({ id: 'pz-futuro', cognome: 'Futuro', nome: 'Carla', creatoIl: '2026-01-01' });
+      };
+      r.onsuccess = () => { r.result.close(); res(); };
+      r.onerror = () => rej(r.error);
+    });
+  });
+  await p0.close();
+
+  const p1 = await ctx.newPage();
+  const consolle = [];
+  p1.on('pageerror', e => consolle.push(e.message));
+  await p1.goto(BASE, { waitUntil: 'networkidle' });
+  await p1.waitForTimeout(900);
+  const testo = await p1.textContent('#view');
+  if (/Impossibile aprire l/.test(testo)) throw new Error('avvio rifiutato: ' + testo.replace(/\s+/g, ' ').slice(0, 160));
+  const stato = await p1.evaluate(async () => {
+    const db = await import('/app/js/db.js');
+    return { ...db.versioni(), pazienti: (await db.all('pazienti')).map(p => p.cognome) };
+  });
+  if (stato.archivio !== 9) throw new Error('doveva restare alla versione trovata: ' + JSON.stringify(stato));
+  if (!stato.pazienti.includes('Futuro')) throw new Error('i dati esistenti non si leggono: ' + JSON.stringify(stato));
+  // Scrivere deve continuare a funzionare sull'archivio piu' recente.
+  const scritto = await p1.evaluate(async () => {
+    const db = await import('/app/js/db.js');
+    await db.put('pazienti', { id: 'pz-nuovo', cognome: 'Aggiunto', nome: 'Dopo' });
+    return (await db.all('pazienti')).map(p => p.cognome).sort();
+  });
+  if (!scritto.includes('Aggiunto')) throw new Error('scrittura persa: ' + JSON.stringify(scritto));
+  if (consolle.length) throw new Error('errori di pagina: ' + consolle.join(' | '));
+  await ctx.close();
+});
+
+await browser.close();
+console.log('\n' + (errors.length ? errors.length + ' PROBLEMI:\n' + errors.join('\n---\n') : 'Nessun errore di console e tutti i passaggi superati'));
+process.exit(errors.length ? 1 : 0);

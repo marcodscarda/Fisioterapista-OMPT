@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Gestionale OMPT</title>
+<link rel="stylesheet" href="app/css/app.css">
+<link rel="stylesheet" href="app/css/print.css">
+<link rel="icon" href="app/icone/icona.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="app/icone/apple-touch-icon.png">
+<link rel="manifest" href="app/manifest.webmanifest">
+<meta name="theme-color" content="#0f6f6a">
+<!-- Su iOS l'avvio a schermo intero dalla schermata Home richiede ancora questi meta. -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="OMPT">
+</head>
+<body>
+<div id="app" class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <span class="brand-row">
+        <!-- Stesso segno dell'icona dell'applicazione: stetoscopio stilizzato. -->
+        <svg class="brand-ico" viewBox="0 0 512 512" aria-hidden="true" focusable="false">
+          <rect width="512" height="512" rx="112" fill="currentColor"/>
+          <g fill="none" stroke="#fff" stroke-width="30" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M168 110v78a88 88 0 0 0 176 0v-78"/>
+            <path d="M140 110h56M316 110h56"/>
+            <path d="M256 276v52a76 76 0 0 0 76 76h8"/>
+          </g>
+          <circle cx="356" cy="404" r="46" fill="#fff"/>
+          <circle cx="356" cy="404" r="21" fill="currentColor"/>
+        </svg>
+        <span class="brand-mark">OMPT</span>
+      </span>
+      <span class="brand-sub" id="brandStudio">Gestionale</span>
+      <span class="brand-ver" id="brandVersione"></span>
+    </div>
+    <nav class="nav" id="nav">
+      <a href="#/" data-nav="/"><span class="nav-ico">▤</span> Home</a>
+      <a href="#/pazienti" data-nav="/pazienti"><span class="nav-ico">👥</span> Pazienti</a>
+      <a href="#/agenda" data-nav="/agenda"><span class="nav-ico">🗓</span> Agenda</a>
+      <a href="#/fatture" data-nav="/fatture"><span class="nav-ico">🧾</span> Fatture</a>
+      <a href="#/incassi" data-nav="/incassi"><span class="nav-ico">💶</span> Incassi</a>
+      <a href="#/esercizi" data-nav="/esercizi"><span class="nav-ico">🏃</span> Esercizi</a>
+      <a href="#/impostazioni" data-nav="/impostazioni"><span class="nav-ico">⚙</span> Impostazioni</a>
+    </nav>
+    <div class="sidebar-foot">
+      <button class="btn btn-ghost btn-sm" id="btnBackup" type="button">⬇ Backup</button>
+      <button class="btn btn-ghost btn-sm" id="btnTheme" type="button">◐ Tema</button>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <button class="btn btn-ghost btn-icon only-mobile" id="btnMenu" type="button" aria-label="Menu">☰</button>
+      <div class="crumbs" id="crumbs"></div>
+      <button class="btn btn-sm btn-cerca" id="btnCerca" type="button" title="Cerca ovunque (Ctrl+K)">
+        <span aria-hidden="true">🔍</span> <span class="solo-desktop">Cerca</span>
+        <kbd class="solo-desktop">Ctrl K</kbd>
+      </button>
+      <div class="topbar-actions" id="topbarActions"></div>
+    </header>
+    <main id="view" class="view" tabindex="-1"></main>
+  </div>
+</div>
+
+<div id="modalRoot"></div>
+<div id="toastRoot" class="toast-root" aria-live="polite"></div>
+<div id="printRoot" class="print-root"></div>
+
+<noscript><p style="padding:2rem">Questo gestionale richiede JavaScript attivo.</p></noscript>
+<script type="module" src="app/js/main.js"></script>
+</body>
+</html>
