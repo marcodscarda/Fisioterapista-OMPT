@@ -103,6 +103,26 @@ Clicca "Ulteriori informazioni" e poi "Esegui comunque".
 Anche qui solo la prima volta.
 
 
+SE DICE "IMPOSSIBILE APRIRE L'ARCHIVIO LOCALE"
+----------------------------------------------
+Con la frase "lower version than the existing version" il browser sta
+dicendo che i dati salvati appartengono a una copia del gestionale piu'
+recente di quella che hai appena aperto. Capita quando sul computer
+restano due cartelle del gestionale e si apre per sbaglio la vecchia,
+oppure quando l'icona sulla Scrivania punta ancora a quella.
+
+Dalla versione 1.2 il gestionale si adatta da solo e parte comunque,
+senza perdere niente. Per non ritrovarti nel dubbio:
+
+  1. Guarda il numero di versione in basso a sinistra, sotto il nome:
+     usa sempre la cartella col numero piu' alto.
+  2. Cancella le cartelle vecchie del gestionale e rifai l'icona con
+     "Crea icona sul desktop" dalla cartella aggiornata.
+
+I tuoi dati NON stanno nella cartella del programma: li conserva il
+browser. Cancellare una copia vecchia del gestionale non li tocca.
+
+
 ATTENZIONE
 ----------
 Non aprire index.html con un doppio clic: il browser lo blocca e la

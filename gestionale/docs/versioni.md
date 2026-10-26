@@ -13,6 +13,35 @@ La forma è `maiuscola.minore`:
 
 ---
 
+## 1.2 — 26 ottobre 2026
+
+**Modifiche della cartella non piu' perse cambiando scheda**
+- Risolta una perdita di dati silenziosa. La cartella salva da sola poco dopo
+  l'ultima modifica; cambiando scheda entro quell'attimo, la cartella veniva
+  ricostruita rileggendo l'episodio ancora vecchio e il salvataggio successivo
+  riportava indietro quanto appena inserito. Capitava per esempio segnando una
+  bandiera rossa e passando subito a un'altra scheda.
+- Ora il salvataggio in sospeso viene completato **prima** di ricostruire la
+  pagina, a ogni spostamento e alla chiusura.
+- Alla chiusura della pagina resta un solo salvataggio di guardia: prima ogni
+  scheda aperta ne lasciava uno, e i piu' vecchi potevano riscrivere dati
+  superati.
+
+**Archivio locale: apertura piu' robusta**
+- Risolto l'errore *«Impossibile aprire l'archivio locale — An attempt was made to open a
+  database using a lower version than the existing version»*. Capitava aprendo una copia
+  del gestionale piu' vecchia dei dati salvati (per esempio una cartella precedente
+  rimasta sul computer, o l'icona sulla Scrivania che puntava ancora a quella): il
+  browser rifiutava l'apertura e il gestionale non partiva.
+- Ora il gestionale si adatta all'archivio che trova: se i dati appartengono a una
+  versione piu' recente li apre comunque, in sola aggiunta, senza perdere nulla.
+- Se l'archivio e' davvero incompatibile il messaggio dice **quali versioni** sono in
+  gioco e cosa fare, invece di incolpare la navigazione privata.
+- All'avvio l'archivio viene aperto una volta sola anche quando piu' parti
+  dell'interfaccia lo chiedono insieme.
+
+---
+
 ## 1.1 — 21 settembre 2026
 
 **Esercizi**

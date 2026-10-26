@@ -31,7 +31,11 @@ export async function vistaCartella(root, { id, tab = 'anteprima' }) {
     indicatore.textContent = 'Salvato ' + new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   }, 700);
   const modificato = () => { indicatore.textContent = 'Modifiche in corso…'; salva(); };
-  addEventListener('beforeunload', () => salva.flush(), { once: true });
+  // Cambiare scheda ricostruisce la cartella e rilegge l'episodio: il
+  // salvataggio rinviato va completato prima, o la modifica appena fatta
+  // verrebbe riscritta con la versione precedente. Vale anche alla chiusura
+  // della pagina, di cui si occupa lo stesso meccanismo.
+  S.inSospeso(() => (salva.pendente() ? salva.flush() : undefined));
 
   const testa = h('div', { class: 'card' },
     h('div', { class: 'card-head' },

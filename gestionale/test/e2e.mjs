@@ -24,6 +24,32 @@ const step = async (nome, fn) => {
   catch (e) { console.log('FAIL ' + nome + ': ' + e.message); errors.push('STEP ' + nome + ': ' + e.message); }
 };
 
+/* Accende una pastiglia dentro una sezione precisa e attende che risulti
+   accesa. La sezione va indicata perche' la stessa voce compare in piu' punti
+   della cartella (per esempio "Diplopia" sta sia nello screening cervicale sia
+   nei segnali di allarme vestibolari). L'attesa serve perche' le pastiglie
+   vengono ridisegnate a ogni scelta: un clic caduto in quell'istante non
+   salverebbe nulla, in silenzio. Si attende lo stato invece di ricliccare,
+   perche' un secondo clic la spegnerebbe. */
+const accendiPastiglia = async (sezione, testo) => {
+  const sez = page.locator(sezione);
+  await sez.locator('.chip-opt', { hasText: testo }).first().click();
+  await sez.locator('.chip-opt[aria-checked="true"]', { hasText: testo }).first()
+    .waitFor({ timeout: 5000 })
+    .catch(() => { throw new Error('la pastiglia non si attiva: ' + testo + ' in ' + sezione); });
+};
+
+/* Attende che il salvataggio automatico sia arrivato in archivio, nella sezione
+   attesa. Aspettare un tempo fisso piu' lungo del rinvio di salvataggio rende
+   il test incostante; controllare la sezione accerta che il valore sia finito
+   dove deve. */
+const attendiInCartella = (sezione, frammento) => page.waitForFunction(async ([s, f]) => {
+  const db = await import('/app/js/db.js');
+  const ep = (await db.all('episodi'))[0];
+  return JSON.stringify(ep?.cartella?.[s] || {}).includes(f);
+}, [sezione, frammento], { timeout: 8000 })
+  .catch(() => { throw new Error('il valore ' + frammento + ' non risulta salvato in ' + sezione); });
+
 await page.goto(BASE, { waitUntil: 'networkidle' });
 
 await step('cruscotto caricato', async () => {
@@ -117,8 +143,8 @@ await step('sezione vestibolare e anteprima', async () => {
   await page.click('.tabs button:has-text("Equilibrio e vestibolo")');
   await page.waitForSelector('details.sec:has-text("Segnali di allarme")', { timeout: 5000 });
   await page.click('details.sec:has-text("Segnali di allarme") > summary');
-  await page.click('.chip-opt:has-text("Diplopia")');
-  await page.waitForTimeout(900);
+  await accendiPastiglia('details.sec:has-text("Segnali di allarme e sospetto")', 'Diplopia');
+  await attendiInCartella('vestAllarme', 'Diplopia');
   await page.click('.tabs button:has-text("Anteprima")');
   await page.waitForSelector('.anteprima .ant-voce', { timeout: 5000 });
   const t = await page.textContent('.anteprima');
@@ -129,13 +155,36 @@ await step('sezione vestibolare e anteprima', async () => {
 
 await step('bandiere rosse evidenziate', async () => {
   await page.click('.tabs button:has-text("Esame soggettivo")').catch(()=>{});
+  await page.waitForSelector('details.sec:has-text("Domande speciali")', { timeout: 5000 });
   await page.click('details.sec:has-text("Domande speciali") > summary');
-  await page.click('.chip-opt:has-text("Storia di neoplasia")');
-  await page.waitForTimeout(900); // attende il salvataggio automatico
+  await accendiPastiglia('details.sec:has-text("Domande speciali")', 'Storia di neoplasia');
+  await attendiInCartella('redflags', 'Storia di neoplasia');
   await page.reload({ waitUntil: 'networkidle' });
   await page.waitForSelector('.alert.danger', { timeout: 5000 });
   const t = await page.textContent('.alert.danger');
   if (!/neoplasia/i.test(t)) throw new Error('banner allerte non mostra il reperto: ' + t);
+});
+
+/* Perdita di dati silenziosa: si scriveva in una scheda e si cambiava scheda
+   prima che scattasse il salvataggio rinviato. La cartella veniva ricostruita
+   rileggendo l'episodio ancora vecchio e il salvataggio successivo riportava
+   indietro la modifica appena fatta. */
+await step('modifica e cambio scheda immediato: nulla va perso', async () => {
+  await page.click('.tabs button:has-text("Esame soggettivo")');
+  await page.waitForSelector('details.sec:has-text("Domande speciali")', { timeout: 5000 });
+  await page.click('details.sec:has-text("Domande speciali") > summary');
+  await accendiPastiglia('details.sec:has-text("Domande speciali")', 'Febbre');
+  // Subito in un'altra scheda, senza attendere il salvataggio.
+  await page.click('.tabs button:has-text("Equilibrio e vestibolo")');
+  await page.waitForSelector('details.sec:has-text("Segnali di allarme e sospetto")', { timeout: 5000 });
+  await page.click('details.sec:has-text("Segnali di allarme e sospetto") > summary');
+  await accendiPastiglia('details.sec:has-text("Segnali di allarme e sospetto")', 'Disartria');
+
+  await attendiInCartella('vestAllarme', 'Disartria');
+  await attendiInCartella('redflags', 'Febbre');
+  // E quanto inserito prima non deve essere tornato indietro.
+  await attendiInCartella('redflags', 'Storia di neoplasia');
+  await attendiInCartella('vestAllarme', 'Diplopia');
 });
 
 await step('asterischi e seduta SOAP', async () => {
@@ -611,6 +660,56 @@ await step('responsive a 400px', async () => {
   await page.waitForTimeout(400);
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   if (overflow > 2) throw new Error('scroll orizzontale di ' + overflow + 'px');
+});
+
+/* Archivio lasciato da una copia piu' recente del gestionale: una volta
+   impediva l'avvio ("lower version than the existing version"). Si svolge in
+   un contesto separato per non toccare i dati usati dai passaggi precedenti. */
+await step('archivio di una versione piu recente: si apre comunque', async () => {
+  const ctx = await browser.newContext();
+  const prep = BASE + '__prep-versione';
+  await ctx.route(prep, r => r.fulfill({ contentType: 'text/html', body: '<!doctype html><title>prep</title>' }));
+  const p0 = await ctx.newPage();
+  await p0.goto(prep);
+  // Archivio a versione 9 con tutti gli store di oggi piu' uno sconosciuto,
+  // come lo lascerebbe una versione futura, e un paziente dentro.
+  await p0.evaluate(async () => {
+    const stores = ['settings', 'pazienti', 'episodi', 'sedute', 'appuntamenti',
+      'fatture', 'incassi', 'esercizi', 'modelliSeduta', 'contatori', 'inventato'];
+    await new Promise((res, rej) => {
+      const r = indexedDB.open('gestionale-ompt', 9);
+      r.onupgradeneeded = () => {
+        for (const s of stores) if (!r.result.objectStoreNames.contains(s)) r.result.createObjectStore(s, { keyPath: 'id' });
+        r.transaction.objectStore('pazienti').put({ id: 'pz-futuro', cognome: 'Futuro', nome: 'Carla', creatoIl: '2026-01-01' });
+      };
+      r.onsuccess = () => { r.result.close(); res(); };
+      r.onerror = () => rej(r.error);
+    });
+  });
+  await p0.close();
+
+  const p1 = await ctx.newPage();
+  const consolle = [];
+  p1.on('pageerror', e => consolle.push(e.message));
+  await p1.goto(BASE, { waitUntil: 'networkidle' });
+  await p1.waitForTimeout(900);
+  const testo = await p1.textContent('#view');
+  if (/Impossibile aprire l/.test(testo)) throw new Error('avvio rifiutato: ' + testo.replace(/\s+/g, ' ').slice(0, 160));
+  const stato = await p1.evaluate(async () => {
+    const db = await import('/app/js/db.js');
+    return { ...db.versioni(), pazienti: (await db.all('pazienti')).map(p => p.cognome) };
+  });
+  if (stato.archivio !== 9) throw new Error('doveva restare alla versione trovata: ' + JSON.stringify(stato));
+  if (!stato.pazienti.includes('Futuro')) throw new Error('i dati esistenti non si leggono: ' + JSON.stringify(stato));
+  // Scrivere deve continuare a funzionare sull'archivio piu' recente.
+  const scritto = await p1.evaluate(async () => {
+    const db = await import('/app/js/db.js');
+    await db.put('pazienti', { id: 'pz-nuovo', cognome: 'Aggiunto', nome: 'Dopo' });
+    return (await db.all('pazienti')).map(p => p.cognome).sort();
+  });
+  if (!scritto.includes('Aggiunto')) throw new Error('scrittura persa: ' + JSON.stringify(scritto));
+  if (consolle.length) throw new Error('errori di pagina: ' + consolle.join(' | '));
+  await ctx.close();
 });
 
 await browser.close();

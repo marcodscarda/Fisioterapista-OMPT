@@ -52,6 +52,31 @@ export function avviaRouter(render) {
 
 export const aggiorna = () => _render?.(risolvi(percorso()), percorso());
 
+/* ---------- Lavoro in sospeso fra una pagina e l'altra ---------- */
+/* Una pagina che salva in differita (la cartella clinica) lascia qui il modo di
+   completare il salvataggio. Va svolto PRIMA di costruire la pagina nuova:
+   altrimenti quella rilegge dall'archivio dati ancora vecchi e, al salvataggio
+   successivo, li riscrive sopra le modifiche appena fatte. */
+let _inSospeso = null;
+let _ascoltaChiusura = false;
+export const inSospeso = (completa) => {
+  _inSospeso = completa;
+  // Un solo ascoltatore della chiusura per tutta la vita della pagina:
+  // registrarne uno a ogni schermata farebbe scrivere, al momento di chiudere,
+  // anche le copie vecchie dei dati rimaste nelle schermate precedenti.
+  if (!_ascoltaChiusura) {
+    addEventListener('beforeunload', () => {
+      try { _inSospeso?.(); } catch (e) { console.error(e); }
+    });
+    _ascoltaChiusura = true;
+  }
+};
+export async function completaInSospeso() {
+  const completa = _inSospeso;
+  _inSospeso = null;
+  if (completa) { try { await completa(); } catch (e) { console.error(e); } }
+}
+
 /* ---------- Tema ---------- */
 const TEMA_KEY = 'gestionale-ompt-tema';
 export function applicaTema(t) {

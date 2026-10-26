@@ -53,6 +53,9 @@ function briciole(...parti) {
 
 /* ---------- Render ---------- */
 async function render(match, path) {
+  // Prima di ricostruire la pagina si completa un eventuale salvataggio
+  // rinviato: la pagina nuova deve leggere dati aggiornati.
+  await S.completaInSospeso();
   const root = vista();
   if (!match) {
     clear(root).appendChild(h('div', { class: 'card' },
@@ -87,10 +90,15 @@ async function avvia() {
   try {
     await db.openDB();
   } catch (err) {
+    // Un archivio piu' recente del programma non ha niente a che vedere con la
+    // navigazione privata: suggerire quella manderebbe fuori strada.
+    const versione = err?.name === 'VersionError' || /versione più recente|lower version|less than the existing|higher version/i.test(err?.message || '');
     clear(vista()).appendChild(h('div', { class: 'alert danger' },
       h('strong', 'Impossibile aprire l’archivio locale. '),
       err.message,
-      h('p', { class: 'mb0 small' }, 'Verifica di non essere in navigazione privata e che il browser possa salvare i dati dei siti.')));
+      h('p', { class: 'mb0 small' }, versione
+        ? 'Stai aprendo una copia del gestionale più vecchia dei dati salvati: apri la cartella aggiornata (quella con la versione più alta in basso a sinistra) e lascia perdere le copie precedenti.'
+        : 'Verifica di non essere in navigazione privata e che il browser possa salvare i dati dei siti.')));
     return;
   }
 

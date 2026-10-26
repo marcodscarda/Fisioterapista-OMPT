@@ -232,10 +232,28 @@ export function toast(msg, kind = '') {
 
 /* ---------- Debounce ---------- */
 export function debounce(fn, ms = 300) {
-  let t;
-  const wrapped = (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
-  wrapped.cancel = () => clearTimeout(t);
-  wrapped.flush = (...args) => { clearTimeout(t); fn(...args); };
+  let t = null;
+  let attesi = null;   // argomenti del lavoro rinviato, finche' non viene svolto
+  const wrapped = (...args) => {
+    attesi = args;
+    clearTimeout(t);
+    t = setTimeout(() => { t = null; const a = attesi; attesi = null; fn(...a); }, ms);
+  };
+  wrapped.cancel = () => { clearTimeout(t); t = null; attesi = null; };
+  /** C'e' del lavoro rinviato non ancora svolto? */
+  wrapped.pendente = () => attesi !== null;
+  /**
+   * Svolge subito il lavoro e ne restituisce l'esito, che si puo' attendere.
+   * Chiamato senza argomenti svolge quello rinviato, se c'e'; altrimenti esegue
+   * comunque, perche' diverse schermate se ne servono per salvare su richiesta.
+   */
+  wrapped.flush = (...args) => {
+    const a = attesi || args;
+    clearTimeout(t);
+    t = null;
+    attesi = null;
+    return fn(...a);
+  };
   return wrapped;
 }
 

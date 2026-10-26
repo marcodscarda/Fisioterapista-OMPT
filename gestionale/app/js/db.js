@@ -22,11 +22,12 @@ const STORES = {
 };
 
 let _db = null;
+let _apertura = null;   // apertura in corso: le chiamate in parallelo la condividono
 
-export function openDB() {
-  if (_db) return Promise.resolve(_db);
+/** Apre l'archivio a una versione precisa, creando gli archivi che mancano. */
+function apri(versione) {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    const req = indexedDB.open(DB_NAME, versione);
     req.onupgradeneeded = (ev) => {
       const db = req.result;
       for (const [name, indexes] of Object.entries(STORES)) {
@@ -39,14 +40,65 @@ export function openDB() {
       }
     };
     req.onsuccess = () => {
-      _db = req.result;
-      _db.onversionchange = () => { _db.close(); _db = null; };
-      resolve(_db);
+      const db = req.result;
+      db.onversionchange = () => { db.close(); if (_db === db) _db = null; };
+      resolve(db);
     };
     req.onerror = () => reject(req.error || new Error('Impossibile aprire il database locale.'));
-    req.onblocked = () => reject(new Error('Database bloccato da un altro tab: chiudi le altre schede del gestionale.'));
+    req.onblocked = () => reject(new Error('Archivio bloccato da un’altra scheda: chiudi le altre schede del gestionale.'));
   });
 }
+
+/** Versione dell'archivio gia' presente nel browser. */
+function versioneArchivio() {
+  return new Promise((resolve, reject) => {
+    // Aprire senza indicare la versione restituisce quella esistente.
+    const req = indexedDB.open(DB_NAME);
+    req.onsuccess = () => { const v = req.result.version; req.result.close(); resolve(v); };
+    req.onerror = () => reject(req.error || new Error('Il browser non consente di salvare i dati dei siti.'));
+  });
+}
+
+/**
+ * Apre l'archivio locale.
+ * Caso normale: una sola apertura alla versione attesa, come sempre.
+ * Caso dei dati piu' recenti del programma (capita riaprendo una copia vecchia
+ * del gestionale dopo averne usata una aggiornata): invece di rifiutarsi, si
+ * riapre alla versione trovata. Gli aggiornamenti aggiungono archivi e non ne
+ * togliono, quindi i dati restano leggibili e nulla va perso.
+ */
+async function apriAdattando() {
+  try {
+    return await apri(DB_VERSION);
+  } catch (err) {
+    if (err?.name !== 'VersionError') throw err;
+    const esistente = await versioneArchivio();
+    const db = await apri(esistente);   // nessun aggiornamento: solo lettura e scrittura
+    const mancanti = Object.keys(STORES).filter(n => !db.objectStoreNames.contains(n));
+    if (!mancanti.length) return db;
+    // Una copia vecchia non puo' creare gli archivi che non conosce: meglio
+    // dirlo con i numeri in mano, perche' Safari non li mostra.
+    db.close();
+    throw new Error(
+      `I dati salvati appartengono a una versione più recente del gestionale ` +
+      `(archivio ${esistente}, questa copia ${DB_VERSION}): manca ${mancanti.join(', ')}. ` +
+      `Apri la cartella aggiornata del gestionale invece di questa.`);
+  }
+}
+
+export function openDB() {
+  if (_db) return Promise.resolve(_db);
+  // Una sola apertura anche quando mezza interfaccia la chiede insieme.
+  if (!_apertura) {
+    _apertura = apriAdattando().then(
+      db => { _db = db; _apertura = null; return db; },
+      err => { _apertura = null; throw err; });
+  }
+  return _apertura;
+}
+
+/** Versione dell'archivio aperto e versione attesa dal programma. */
+export const versioni = () => ({ archivio: _db ? _db.version : null, programma: DB_VERSION });
 
 function tx(storeNames, mode = 'readonly') {
   return openDB().then(db => db.transaction(storeNames, mode));
