@@ -502,6 +502,18 @@ eq('import: nessun progressivo', numeroProgressivo('ABC'), null);
   for (const atteso of ['Codman', 'bastone', 'spallucce', 'gomito', 'Mano e polso', 'collo']) {
     eq('cuffia fase 1: compare ' + atteso, fase1.some(n => n.toLowerCase().includes(atteso.toLowerCase())), true);
   }
+  // La fase attiva assistita deve contenere lo scivolamento sul tavolo: e' il
+  // modo di recuperare la flessione quando l'elevazione contro gravita' e'
+  // ancora troppo.
+  const fase2 = cuffia.filter(x => x.protocollo === es.PROTOCOLLI_CUFFIA[1]).map(x => x.nome);
+  eq('cuffia fase 2: compare lo scivolamento sul tavolo',
+    fase2.some(n => /tavolo|table slide/i.test(n)), true);
+
+  // I collegamenti ai video finiscono sulla scheda del paziente: un indirizzo
+  // incompleto li' non si apre e non si corregge.
+  const videoRotti = es.CATALOGO.filter(x => (x.video || []).some(v => !/^https?:\/\//.test(v?.url || '')));
+  eq('esercizi: i video sono indirizzi completi', videoRotti.map(x => x.nome), []);
+
   eq('cuffia: il protocollo copre anche gomito, mano e collo',
     [...new Set(cuffia.map(x => x.regione))].sort(),
     ['Gomito', 'Polso e mano', 'Rachide cervicale', 'Spalla']);

@@ -13,6 +13,26 @@ La forma è `maiuscola.minore`:
 
 ---
 
+## 1.6 — 3 novembre 2026
+
+**Scivolamenti sul tavolo, e i video sugli esercizi**
+- Nuovo esercizio nella **fase 2 (attiva assistita)** del protocollo di cuffia:
+  **scivolamenti sul tavolo (table slides)**, per recuperare la flessione lasciando che
+  il piano del tavolo sostenga il peso del braccio. La progressione è scritta nella voce:
+  prima si riduce l'inclinazione del tronco, poi si passa alla risalita al muro e
+  all'elevazione attiva.
+- Alla **rotazione esterna passiva con bastone da supino** (fase 1) è stato aggiunto il
+  collegamento al video dimostrativo. I collegamenti video finiscono anche sulla scheda
+  che il paziente porta a casa, sotto la voce *Video*.
+- Fra i suggerimenti dell'attrezzatura compaiono **tavolo** e **asciugamano**.
+
+**Nota.** Gli aggiornamenti non sovrascrivono le voci che hai già in libreria: lo
+scivolamento sul tavolo arriva come voce nuova, mentre il video aggiunto alla rotazione
+esterna compare solo in una libreria creata da zero. Se vuoi il collegamento sulla tua
+voce esistente, aprila e incollalo nel campo *Video*.
+
+---
+
 ## 1.5 — 26 ottobre 2026
 
 **Il protocollo di cuffia diventa completo: quattro fasi, 22 esercizi**

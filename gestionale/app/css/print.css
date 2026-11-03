@@ -93,7 +93,15 @@
   border: .6pt solid #999; border-radius: 2mm;
   padding: 3mm 3.5mm; margin-bottom: 3.5mm;
 }
-:is(.print-root, .print-preview) .ex-nome { margin: 0 0 1mm; font-size: 1.12em; }
+/* Un esercizio descritto per intero puo' superare la pagina: tenerlo unito a
+   ogni costo lo spingerebbe al foglio successivo e lascerebbe mezza pagina
+   bianca. Si lascia che vada a capo, tenendo insieme le cose che perdono
+   senso spezzate: il titolo con l'inizio dell'esercizio e ogni singola riga
+   con la sua etichetta. */
+:is(.print-root, .print-preview) .ex.avoid-break { page-break-inside: auto; break-inside: auto; }
+:is(.print-root, .print-preview) .ex-nome { margin: 0 0 1mm; font-size: 1.12em;
+  page-break-after: avoid; break-after: avoid; }
+:is(.print-root, .print-preview) .ex-riga { page-break-inside: avoid; break-inside: avoid; }
 :is(.print-root, .print-preview) .ex-obiettivo { font-style: italic; margin-bottom: 2mm; }
 :is(.print-root, .print-preview) .ex-foto { display: flex; gap: 3mm; margin-bottom: 2.5mm; }
 :is(.print-root, .print-preview) .ex-foto figure { margin: 0; flex: 1; max-width: 48%; }

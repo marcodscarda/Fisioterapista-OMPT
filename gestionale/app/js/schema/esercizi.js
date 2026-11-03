@@ -41,7 +41,7 @@ export const CATEGORIE = [
 export const ATTREZZATURA = [
   'Nessuna', 'Elastico', 'Manubri', 'Kettlebell', 'Bastone', 'Palla',
   'Fitball', 'Tappetino', 'Sedia', 'Muro', 'Gradino', 'Cuscino', 'Cuscino propriocettivo',
-  'Bosu', 'Foam roller', 'Panca', 'Lettino', 'Corda', 'Cavigliera'
+  'Bosu', 'Foam roller', 'Panca', 'Lettino', 'Tavolo', 'Asciugamano', 'Corda', 'Cavigliera'
 ];
 
 /** I campi del dosaggio, con l'unità: valgono sia in libreria sia nel programma. */
@@ -503,6 +503,7 @@ export const CATALOGO = [
     protocollo: CUFFIA_1, da: '1.5',
     obiettivo: 'Recuperare la rotazione esterna passiva entro il limite concesso, senza attivare la cuffia.',
     attrezzatura: ['Bastone', 'Lettino'],
+    video: [{ url: 'https://youtu.be/Lbbh5VlA7jc', titolo: 'Rotazione esterna da supino con il bastone' }],
     posizione: 'Supino, ginocchia flesse. Braccio operato lungo il fianco con il gomito piegato a 90° e un asciugamano arrotolato fra gomito e tronco. Entrambe le mani impugnano il bastone.',
     esecuzione: 'Con la mano sana spingi il bastone in modo da ruotare l’avambraccio operato verso l’esterno, come se aprissi una porta, tenendo il gomito fermo contro l’asciugamano. Fermati al grado concesso dal chirurgo — spesso 0° nelle prime settimane dopo sutura del sottoscapolare, 30–45° negli altri casi — mantieni un istante, poi riaccompagna al centro.',
     puntiChiave: [
@@ -561,6 +562,35 @@ export const CATALOGO = [
      carico resta fuori. I protocolli pubblicati concordano sulla sequenza e
      divergono sulle settimane: il riferimento resta il chirurgo.
   */
+  e({
+    nome: 'Scivolamenti sul tavolo (table slides)',
+    regione: 'Spalla', categoria: 'Mobilità',
+    protocollo: CUFFIA_2, da: '1.6',
+    obiettivo: 'Recuperare la flessione della spalla lasciando che il tavolo sostenga il peso del braccio: il movimento c’è, il carico sulla riparazione quasi no.',
+    attrezzatura: ['Tavolo', 'Sedia', 'Asciugamano'],
+    video: [{ url: 'https://youtube.com/shorts/UIgptTUBj2I', titolo: 'Scivolamenti sul tavolo' }],
+    posizione: 'Seduto su una sedia davanti a un tavolo, abbastanza vicino perché l’avambraccio ci appoggi per intero. Mano e avambraccio del lato operato sul tavolo, palmo in basso, su un asciugamano o un panno che scivoli bene. Piedi a terra, schiena eretta.',
+    esecuzione: 'Fai scivolare l’asciugamano in avanti sul tavolo, accompagnando il movimento con un’inclinazione del tronco in avanti dalle anche: il braccio sale rispetto al tronco senza che tu debba sollevarlo. Arriva fino al punto concesso, resta un paio di secondi, poi riporta indietro con la stessa lentezza raddrizzandoti. A mano a mano che il gesto diventa pulito, inclina meno il tronco e lascia che sia la spalla a guadagnare i gradi.',
+    puntiChiave: [
+      'Il braccio resta sempre appoggiato: è il tavolo a sostenerlo, non la spalla',
+      'La mano scivola leggermente in fuori rispetto alla linea del corpo, nel piano della scapola',
+      'La spalla non sale verso l’orecchio: se succede, hai raggiunto il tuo limite di oggi',
+      'Meno il tronco si inclina, più lavora la spalla: è così che si progredisce'
+    ],
+    erroriComuni: [
+      'Staccare l’avambraccio dal tavolo e trasformarlo in un’elevazione attiva',
+      'Guadagnare gradi solo piegando il tronco, senza che la spalla si muova',
+      'Scivolare in fretta e tirare a fine corsa',
+      'Appoggiarsi sul braccio operato per rialzare il tronco'
+    ],
+    respirazione: 'Espira mentre scivoli in avanti, inspira tornando.',
+    dose: { serie: '2–3', ripetizioni: '10', tenuta: '2–3 secondi', recupero: '30 secondi', frequenza: '2–3 volte al giorno', ritmo: 'lento, 3 secondi all’andata e 3 al ritorno' },
+    progressione: 'Prima si riduce l’inclinazione del tronco, poi si passa alla risalita al muro con la mano e all’elevazione attiva nel piano della scapola da supino; infine elevazione attiva da seduto.',
+    regressione: 'Più inclinazione del tronco, ampiezza ridotta, asciugamano più scorrevole; oppure si torna all’elevazione assistita da supino, dove il letto sostiene tutto il braccio.',
+    precauzioni: PRECAUZIONI_CUFFIA_2 + ' Il braccio non va mai usato per spingere sul tavolo: l’appoggio serve a sostenere, non a caricare.',
+    doloreAmmesso: 'Fino a 3/10 durante lo scivolamento, che rientra in pochi minuti e non lascia strascichi il giorno dopo.',
+    note: 'È l’esercizio con cui si recupera la flessione quando l’elevazione contro gravità è ancora troppo: il piano del tavolo annulla quasi del tutto il peso dell’arto, come l’acqua in piscina, e l’asciugamano toglie l’attrito che altrimenti farebbe lavorare la spalla per trascinare la mano. La quota di movimento si costruisce in due modi — inclinando il tronco o alzando il braccio — e la progressione consiste nel togliere il primo per lasciare il secondo. Si trova nei protocolli post-operatori anche con il nome di table slides o di scivolamenti seduti; da supino l’equivalente è l’elevazione assistita dall’arto sano. Il video indicato dal fisioterapista mostra la sequenza.'
+  }),
   e({
     nome: 'Elevazione attiva assistita con bastone, da supino a seduto',
     regione: 'Spalla', categoria: 'Mobilità',

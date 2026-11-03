@@ -70,7 +70,7 @@ protocolli distinti. Filtrando per protocollo hai davanti solo la fase che ti se
 | Fase | Quando, di solito | Che cosa contiene |
 |---|---|---|
 | **1 — passiva** | 0–6 settimane, con tutore | Elevazione assistita dall'arto sano da supino · abduzione passiva con bastone · rotazione esterna passiva con bastone · pendolari di Codman · spallucce · **flesso-estensione di gomito** · mano e polso · mobilità del collo · gestione di tutore, sonno e postura |
-| **2 — attiva assistita** | ~6–12 settimane | Elevazione assistita con bastone da supino a seduto · carrucola · risalita al muro · retrazione e depressione scapolare · elevazione attiva nel piano della scapola da supino · isometrie submassimali |
+| **2 — attiva assistita** | ~6–12 settimane | **Scivolamenti sul tavolo (table slides)** · elevazione assistita con bastone da supino a seduto · carrucola · risalita al muro · retrazione e depressione scapolare · elevazione attiva nel piano della scapola da supino · isometrie submassimali |
 | **3 — rinforzo** | dalla ~12ª settimana | Rotazione esterna e interna con elastico · remata · scaption con carico leggero · Y e T in prono |
 | **4 — ritorno alle attività** | dalla ~16ª settimana | Spinte progressive in appoggio · ritorno al lavoro e ai gesti sopra la testa, con i criteri di dimissione |
 
@@ -104,9 +104,9 @@ testo lo dice invece di scegliere per te.
 
 ## Il catalogo di partenza
 
-Alla prima apertura la libreria contiene **44 esercizi** su rachide lombare e cervicale,
+Alla prima apertura la libreria contiene **45 esercizi** su rachide lombare e cervicale,
 spalla, gomito, polso e mano, anca, ginocchio, caviglia, equilibrio e vestibolo, più
-alcuni generali (respirazione, cammino). Ventidue di questi formano il protocollo
+alcuni generali (respirazione, cammino). Ventitré di questi formano il protocollo
 post-operatorio di cuffia, diviso nelle sue quattro fasi.
 
 Servono a non partire dal vuoto. **Sono modificabili, duplicabili e cancellabili** come
